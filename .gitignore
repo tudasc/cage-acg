@@ -1,0 +1,8 @@
+#ignore build directories
+/cmake-build-debug
+/build*
+
+#ignore clion cache
+/.idea
+
+
