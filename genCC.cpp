@@ -17,25 +17,167 @@
 #include "Callgraph.h"
 #include "CgNode.h"
 
+#include <llvm/Transforms/Utils/ModuleUtils.h>
+#include <MCGManager.h>
+
+#include "LLVMTypeHierarchy.h"
+
 using namespace llvm;
 
-static cl::opt<bool> enableGenCC("genCC", cl::init(false),
-                                 cl::desc("generates call-graph component"));
+//static cl::opt<bool> enableGenCC("genCC", cl::init(false),
+//                                 cl::desc("generates call-graph component"));
 
 namespace genCC {
 
-    void generateLibraryFunction(Module &M, GlobalVariable *gv) {
-        FunctionType *getCallGraph = FunctionType::get(Type::getVoidTy(M.getContext()),
-                                                       {gv->getType()},
-                                                       false);
+    void generateLibraryFunction(Module &M) {
+        assert(M.getFunction("getGCC") == nullptr && "could not add getGCC runtime component call");
 
-        auto f = M.getOrInsertFunction("getGCC", getCallGraph);
+        FunctionType *getCallGraphFT = FunctionType::get(Type::getVoidTy(M.getContext()),
+                                                         {Type::getInt8PtrTy(M.getContext())},
+                                                         false);
+
+        M.getOrInsertFunction("getGCC", getCallGraphFT);
+    }
+
+    void generateInitFunction(Module &M) {
+        assert(M.getFunction("genCCInit") == nullptr && "genCCInit function already exists");
+
+        FunctionType *InitFT = FunctionType::get(Type::getVoidTy(M.getContext()),
+                                                 {},
+                                                 false);
+
+        M.getOrInsertFunction("genCCInit", InitFT);
+        auto &InitFunctionBBList = M.getFunction("genCCInit")->getBasicBlockList();
+        InitFunctionBBList.insert(InitFunctionBBList.begin(), BasicBlock::Create(M.getContext()));
+        InitFunctionBBList.front().getInstList().insert(InitFunctionBBList.front().getInstList().begin(),
+                                                        ReturnInst::Create(M.getContext()));
+        appendToGlobalCtors(M, M.getFunction("genCCInit"), 101);
+    }
+
+    void passToRuntimeComponent(Module &M, Value *Arg) {
+        auto &FIlist = M.getFunction("genCCInit")->front().getInstList();
+        auto bitCast = BitCastInst::CreateBitOrPointerCast(Arg, Type::getInt8PtrTy(M.getContext()));
+        FIlist.insert((--FIlist.end()), bitCast);
+        FIlist.insert((--FIlist.end()), CallInst::Create(M.getFunction("getGCC"), bitCast));
+    }
+
+    void generateVTableLookup(Module &M) {
+        for (auto &g: M.globals()) {
+
+            //wie generiert  clang code insbesondere mit function pointer
+            //nur selbst analysieren wenns nicht wirklich viel ist
+            //evtl vorhandene optionen nutzen?
+            //
+
+            if (g.hasName() && llvm::StringRef(demangle(g.getName().str())).startswith("vtable")) {
+                outs() << "The Vtable for: " << g.getName() << " (" << demangle(g.getName().str()) << ")\n";
+                if(!g.hasInternalLinkage()){
+                    outs()<<"is not internally linked\n";
+                    if(g.hasExternalLinkage()){
+                        outs()<<"it is instead externally linked, no information available\n\n";
+                    }else{
+                        outs()<<"THIS SHOULD NEVER HAPPEN!!\n";
+                    }
+                    continue;
+                }
+
+                outs() << "Contains:\n";
+                //SmallVector<std::pair<unsigned int, MDNode *>> allMetadata = {};
+                //g.getAllMetadata(allMetadata);
+                g.dump();
+
+                //Globas are allways pointer types
+                if (!g.getType()->isPointerTy()) {
+                    outs() << "Apparently g was no pointer type?\n";
+                    continue;
+                }
+                //vtable should always be constant struct with exactly one array inside
+                if(g.op_begin()==g.op_end()){
+                    outs()<<"Global does not contain any operand values\n";
+                    continue;
+
+                }
+                auto &opv = *g.op_begin();
+                if(opv== nullptr){
+                    outs()<<"NULL?\n";
+                    continue;
+                }
+
+                if (!opv->getType()->isStructTy()) {
+                    outs() << "Apparently operand was no struct type?\n";
+                    continue;
+                }
+                auto *struc = cast<ConstantStruct>(opv);
+                if(struc->getNumOperands() != 1){
+                    outs() << "Apparently the struct contains more than one arrays?\n";
+                    outs() << "this might occur on multiple inheritance, haven't tested that?\n";
+                    continue;
+
+                }
+
+                if(!struc->getOperand(0)->getType()->isArrayTy()){
+                    outs() << "does not contain an array to model the vtable, why?\n";
+                    continue;
+
+                }
+
+                //these are all function ptr references of the vtable
+                for (auto &ptr: cast<ConstantArray>(struc->getOperand(0))->operands()) {
+                    ptr->dump();
+                };
+                outs() << "-----------------------------\n\n";
+
+            }
+        }
 
     }
 
-    bool work(Module &M, ModuleAnalysisManager *MA) {
+    metacg::Callgraph llvmCallGraphToMetaCG(CallGraphAnalysis::Result &llvmCG) {
 
-        //errs() << "Running with new pass manager \n";
+        metacg::graph::MCGManager &mcgManager = metacg::graph::MCGManager::get();
+        mcgManager.addToManagedGraphs("graph",std::make_unique<metacg::Callgraph>());
+
+        for (auto &llvmNode: llvmCG) {
+            if (llvmNode.first == NULL) {
+                outs() << "Null Node for Entry, skip\n";
+            } else {
+                if (llvmNode.first->hasName()) {
+                    mcgManager.findOrCreateNode(llvmNode.first->getName().str());
+                    auto n1 = mcgManager.findOrCreateNode(llvmNode.first->getName().str());
+
+                    auto &function = llvmNode.first->getFunction();
+
+                    n1->setFilename(function.getParent()->getSourceFileName());
+                    n1->setHasBody(function.getInstructionCount() != 0);
+
+
+                    for (auto node: *llvmNode.second) {
+                        if (node.first.hasValue()) {
+                            auto n2 = mcgManager.findOrCreateNode(node.first.getValue()->getName().str());
+                            mcgManager.addEdge(n1, n2);
+                        } else {
+                            //outs() << "Function:" << n1->getFunctionName() << " calls external node\n";
+                        }
+                    }
+                    //outs() << "Finished creating call Edges!\n";
+                } else {
+                    //outs() << "Found function without name!\n";
+                }
+            }
+        }
+
+        llvm::outs() << "Completed insertion of all nodes and edges\n";
+
+
+        return *(mcgManager.getCallgraph());
+    }
+
+    bool work(Module &M, ModuleAnalysisManager *MA) {
+        generateLibraryFunction(M);
+        generateInitFunction(M);
+        generateVTableLookup(M);
+
+
         /**Get function Information and dump to module
         **/
         {
@@ -55,12 +197,9 @@ namespace genCC {
             global1->setAlignment(MaybeAlign(1));
             global1->setInitializer(insertableCallgraph1);
 
+            passToRuntimeComponent(M, global1);
 
 
-            //Fixme:dont insert into main, but insert into function with __attribute__((constructor)) to handle shared libraries
-            generateLibraryFunction(M, global1);
-            auto &FIlist = M.getFunction("main")->front().getInstList();
-            FIlist.insert(FIlist.begin(), CallInst::Create(M.getFunction("getGCC"), {global1}));
         }
 
         /** Use callgraph information provided by CGA Pass
@@ -68,51 +207,31 @@ namespace genCC {
          */
         {
             auto &cgResult = MA->getResult<CallGraphAnalysis>(M);
-            cgResult.print(outs());
+            auto anaRes = MA->getResult<TypeHierarchyAnalyzer>(M);
+            outs()<<"AnaRes: "<<anaRes.first.size()<<"; "<<anaRes.second.size()<<"\n";
+            for(const auto& elem : anaRes.first){
+                outs()<<"Type: "<<elem.first<<"\n";
+                elem.second->dump();
+            }
+            outs()<<"--------------------------------\n";
+            for(const auto& elem : anaRes.second){
+                outs()<<"VTable: "<<elem.first<<"\n";
+                elem.second->dump();
+            }
+            outs()<<"--------------------------------\n";
 
+            //cgResult.print(outs());
 
             std::string callGraph2;
             llvm::raw_string_ostream llvmso(callGraph2);
 
             cgResult.print(llvmso);
-            llvm::outs() << "end of cgResult\n";
+            cgResult.dump();
 
-
-            metacg::Callgraph mcgCallGraph;
-            llvm::outs() << "generated call graph object\n";
-            for (auto &llvmNode: cgResult) {
-                if (llvmNode.first == NULL) {
-                    outs() << "Null?\n";
-                } else {
-
-                    if (llvmNode.first->hasName()) {
-                        llvm::outs() << "Inserting: " << llvmNode.first->getName() << "\n";
-                        metacg::CgNode cgn(llvmNode.first->getName().str());
-                        outs()<<"Created node\n";
-                        //mcgCallGraph.insert(std::make_shared<metacg::CgNode>(cgn));
-                    } else {
-                        llvm::outs() << "Found function without name!\n";
-                    }
-                }
-            }
-
-            llvm::outs() << "Completed insertion of all nodes\n";
+            auto mcg = llvmCallGraphToMetaCG(cgResult);
             //maybe steal phasar aproach
             //maybe use clang to pre generate virtual metadata in more readable format
             //focus on more common cases and stay in llvm ir
-
-/*
-        SmallVector<std::pair<unsigned, MDNode *>> sv= SmallVector<std::pair<unsigned, MDNode *>>();
-        M.getNamedGlobal("_ZTV7Derived")->getAllMetadata(sv);
-
-        for(auto elem: sv){
-            elem.second->print(outs());
-            outs()<<"\n";
-        }
-        outs()<<"\n";
-
-        outs().flush();
-*/
 
             auto insertableCallgraph2 = ConstantDataArray::getString(M.getContext(), callGraph2, true);
             M.getOrInsertGlobal("CallGraph2", insertableCallgraph2->getType());
@@ -120,48 +239,13 @@ namespace genCC {
             global2->setLinkage(llvm::GlobalValue::ExternalLinkage);
             global2->setAlignment(MaybeAlign(1));
             global2->setInitializer(insertableCallgraph2);
-        }
-
-        //Format of global information is not relevant, as long as its serializable and deserializable
-        //Need graph structur in runtime component
-        //Keep simple, edges nodes,
-        //Must be mergeable
-        //Representation must be serializable to MetaCG
-
-        for (auto &g: M.globals()) {
-            if (g.hasName() && llvm::StringRef(demangle(g.getName().str())).startswith("vtable")) {
-                outs() << "The Vtable for: " << g.getName() << " (" << demangle(g.getName().str()) << ")\n";
-                outs() << "Contains:\n";
-                SmallVector<std::pair<unsigned int, MDNode *>> allMetadata = {};
-                g.getAllMetadata(allMetadata);
-                for (auto m: allMetadata) {
-                    std::string metadata;
-                    llvm::raw_string_ostream llvmso(metadata);
-                    m.second->getOperand(1)->print(llvmso);
-                    outs() << demangle(StringRef(metadata).substr(2, metadata.size() - 3).str()) << "\n";
-                }
-
-                /*if(g.getType()->isStructTy()){
-                    outs()<<"was struct\n";
-                }
-                if(g.getType()->isPointerTy()){
-                    cast<PointerType>(g.getType())->getElementType()->print(outs());
-                    outs()<<"\n";
-                }*/
-            }
+            passToRuntimeComponent(M, global2);
         }
 
 
         return false;
     }
 
-    struct LegacyGenCC : public ModulePass {
-        static char ID;
-
-        LegacyGenCC() : ModulePass(ID) {}
-
-        bool runOnModule(Module &M) override { return work(M, nullptr); }
-    };
 
     struct genCC : PassInfoMixin<genCC> {
         PreservedAnalyses run(Module &M, ModuleAnalysisManager &MA) {
@@ -171,11 +255,19 @@ namespace genCC {
         }
     };
 
+    struct LegacyGenCC : public ModulePass {
+        static char ID;
+
+        LegacyGenCC() : ModulePass(ID) {}
+
+        bool runOnModule(Module &M) override { return work(M, nullptr); }
+    };
+
 } // namespace
 
 char genCC::LegacyGenCC::ID = 0;
 
-static RegisterPass<genCC::LegacyGenCC> X("legacy-genCC", "generates Call Grap Components (legacy)",
+static RegisterPass<genCC::LegacyGenCC> genCCRegistrar("legacy-genCC", "generates Call Grap Components (legacy)",
                                           false /* Only looks at CFG */,
                                           false /* Analysis Pass */);
 
@@ -187,6 +279,7 @@ static llvm::RegisterStandardPasses RegisterGenCC(
 );
 
 /* New PM Registration */
+//todo make registration separate, maybe use tblgen ?
 llvm::PassPluginLibraryInfo getGenCCPluginInfo() {
     return {LLVM_PLUGIN_API_VERSION, "genCC", "0.1",
             [](PassBuilder &PB) {
@@ -206,6 +299,21 @@ llvm::PassPluginLibraryInfo getGenCCPluginInfo() {
                                 return true;
                             }
                             return false;
+                        });
+                // #1 REGISTRATION FOR "opt -passes=print<type-hierarchy>"
+                PB.registerPipelineParsingCallback(
+                        [&](StringRef Name, ModulePassManager &MPM,
+                            ArrayRef<PassBuilder::PipelineElement>) {
+                            if (Name == "print<type-hierarchy>") {
+                                MPM.addPass(TypeHierarchyAnalyzerPrinter(llvm::errs()));
+                                return true;
+                            }
+                            return false;
+                        });
+                // #2 REGISTRATION FOR "MAM.getResult<TypeHierarchyAnalyzer>(Module)"
+                PB.registerAnalysisRegistrationCallback(
+                        [](ModuleAnalysisManager &MAM) {
+                            MAM.registerPass([&] { return TypeHierarchyAnalyzer(); });
                         });
             }};
 }
