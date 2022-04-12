@@ -7,7 +7,6 @@ message(STATUS "Found LLVM/Clang version " ${LLVM_VERSION})
 
 include_directories(${LLVM_INCLUDE_DIRS})
 
-#
 set(metaCGDir /media/tim/Volume/Studium/Master/Semester3/MasterArbeit/MetaCG)
 set(libmetacg ${metaCGDir}/build/graph/libmetacg.so)
 set(libspdlog ${metaCGDir}/build/spdlog-build/libspdlogd.so)
@@ -16,11 +15,13 @@ set(libspdlog ${metaCGDir}/build/spdlog-build/libspdlogd.so)
 include_directories(${metaCGDir}/extern/json/include/)
 include_directories(${metaCGDir}/pgis/lib/include/)
 include_directories(${metaCGDir}/extern/src/extrap/extrap-3.0/include/)
+
+#Builds and compiles without this, but who knows if it breaks anything if we remove this
 include_directories(${metaCGDir}/spdlog-src/include/)
 
 
 include_directories(${metaCGDir}/graph/include/)
 
-add_library(genCC MODULE genCC.cpp LLVMTypeHierarchy.h)
+add_library(genCC MODULE genCC.cpp RecordAnalyzer.h)
 target_compile_options(genCC PUBLIC "-fno-rtti")
 target_link_libraries(genCC PRIVATE ${libmetacg} ${libspdlog})

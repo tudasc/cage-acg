@@ -20,7 +20,7 @@
 #include <llvm/Transforms/Utils/ModuleUtils.h>
 #include <MCGManager.h>
 
-#include "LLVMTypeHierarchy.h"
+#include "RecordAnalyzer.h"
 
 using namespace llvm;
 
@@ -101,18 +101,6 @@ namespace genCC {
         return *(mcgManager.getCallgraph());
     }
 
-    StructType *getFunctionOriginStruct(CallInst &callInst) {
-        if (auto ptrType = callInst.getCalledOperand()->getType()) {
-            if (auto functionType = dyn_cast<FunctionType>(ptrType->getPointerElementType())) {
-                if (auto paramType = dyn_cast<PointerType>(functionType->getParamType(0))) {
-                    return paramType->getElementType()->isStructTy() ? cast<StructType>(paramType->getElementType())
-                                                                     : nullptr;
-                }
-            }
-        }
-        return nullptr;
-    }
-
     bool work(Module &M, ModuleAnalysisManager *MA) {
         generateLibraryFunction(M);
         generateInitFunction(M);
@@ -149,8 +137,8 @@ namespace genCC {
          */
 
         auto &cgResult = MA->getResult<CallGraphAnalysis>(M);
-        auto anaRes = MA->getResult<TypeHierarchyAnalyzer>(M);
-        printTypeHierarchyAnalyzerResults(outs(), anaRes);
+        auto anaRes = MA->getResult<RecordAnalyzer>(M);
+        printRecordAnalyzerResults(outs(), anaRes);
 
         //cgResult.print(outs());
 
@@ -172,19 +160,6 @@ namespace genCC {
         global2->setInitializer(insertableCallgraph2);
         passToRuntimeComponent(M, global2);
 
-
-        for (auto &F: M) {
-            for (auto &B: F) {
-                for (auto &I: B) {
-                    if (isa<CallInst>(I)) {
-                        if (auto *origin = getFunctionOriginStruct(cast<CallInst>(I))) {
-                            outs() << "In function:" << demangle(F.getName().str()) << "\n";
-                            outs() << "we are calling function from: " << demangle(origin->getName().str()) << "\n";
-                        }
-                    }
-                }
-            }
-        }
 
         return false;
     }
@@ -247,16 +222,16 @@ llvm::PassPluginLibraryInfo getGenCCPluginInfo() {
                 PB.registerPipelineParsingCallback(
                         [&](StringRef Name, ModulePassManager &MPM,
                             ArrayRef<PassBuilder::PipelineElement>) {
-                            if (Name == "print<type-hierarchy>") {
-                                MPM.addPass(TypeHierarchyAnalyzerPrinter(llvm::errs()));
+                            if (Name == "print<record-analysis>") {
+                                MPM.addPass(RecordAnalyzerPrinter(llvm::errs()));
                                 return true;
                             }
                             return false;
                         });
-                // #2 REGISTRATION FOR "MAM.getResult<TypeHierarchyAnalyzer>(Module)"
+                // #2 REGISTRATION FOR "MAM.getResult<RecordAnalyzer>(Module)"
                 PB.registerAnalysisRegistrationCallback(
                         [](ModuleAnalysisManager &MAM) {
-                            MAM.registerPass([&] { return TypeHierarchyAnalyzer(); });
+                            MAM.registerPass([&] { return RecordAnalyzer(); });
                         });
             }};
 }
