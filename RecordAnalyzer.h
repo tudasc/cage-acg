@@ -20,6 +20,8 @@ struct Vtable {
     TypeInfo *typeInfo = nullptr;
     //while order is important (i think)
     //no function can occure twice, so we can use a set
+    //no we cant you dumbass
+    //we need indexing you idiot
     std::set<Function*> functions;
 };
 
@@ -240,12 +242,6 @@ getPossibleVersionsOfFunction(RecordMap &thm, std::vector<Function *> vtable) {
 }
 
 void linkTypeHierarchyMap(RecordMap &map, Module& M) {
-    outs() << "Map of: " << map.size() << " Elements\n";
-    for (auto pair: map) {
-        outs() << pair.first << "\n";
-    }
-    outs() << "---------------------------\n";
-
     for(auto& g : M.getGlobalList()){
         if(g.hasName() && isVTable(g.getName().str())){
 
@@ -269,9 +265,6 @@ void linkTypeHierarchyMap(RecordMap &map, Module& M) {
             }
         }
     }
-
-
-
 }
 
 RecordMap work(Module &M) {

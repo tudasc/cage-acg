@@ -1,5 +1,4 @@
 #include <llvm/Analysis/CallGraph.h>
-#include <sstream>
 #include "llvm/IR/Function.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Pass.h"
@@ -9,18 +8,16 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include <llvm/Transforms/IPO/WholeProgramDevirt.h>
-
 #include <llvm/Demangle/Demangle.h>
+#include <llvm/Transforms/Utils/ModuleUtils.h>
 
 #include <clang/Analysis/CallGraph.h>
 
 #include "Callgraph.h"
-#include "CgNode.h"
-
-#include <llvm/Transforms/Utils/ModuleUtils.h>
-#include <MCGManager.h>
-
+#include "MCGManager.h"
 #include "RecordAnalyzer.h"
+#include "MCGWriter.h"
+
 
 using namespace llvm;
 
@@ -61,29 +58,55 @@ namespace genCC {
         FIlist.insert((--FIlist.end()), CallInst::Create(M.getFunction("getGCC"), bitCast));
     }
 
-    metacg::Callgraph llvmCallGraphToMetaCG(CallGraphAnalysis::Result &llvmCG) {
+    metacg::graph::MCGManager& llvmCallGraphToMetaCG(CallGraphAnalysis::Result &llvmCG, RecordMap rm) {
 
         metacg::graph::MCGManager &mcgManager = metacg::graph::MCGManager::get();
         mcgManager.addToManagedGraphs("graph", std::make_unique<metacg::Callgraph>());
 
         for (auto &llvmNode: llvmCG) {
             if (llvmNode.first == NULL) {
-                outs() << "Null Node for Entry, skip\n";
             } else {
                 if (llvmNode.first->hasName()) {
                     mcgManager.findOrCreateNode(llvmNode.first->getName().str());
                     auto n1 = mcgManager.findOrCreateNode(llvmNode.first->getName().str());
-
                     auto &function = llvmNode.first->getFunction();
-
                     n1->setFilename(function.getParent()->getSourceFileName());
                     n1->setHasBody(function.getInstructionCount() != 0);
 
-
                     for (auto node: *llvmNode.second) {
                         if (node.first.hasValue()) {
-                            auto n2 = mcgManager.findOrCreateNode(node.first.getValue()->getName().str());
-                            mcgManager.addEdge(n1, n2);
+                            //Todo: probably should use call base ?
+                            assert(isa<CallInst>(node.first.getValue()));
+                            auto callInst = cast<CallInst>(node.first.getValue());
+                            auto* calledFunction = callInst->getCalledFunction();
+                            if(calledFunction == nullptr){
+                                outs()<<"Call was to:\n";
+                                callInst->dump();
+                                outs()<<"This is a function Pointer that was just loaded\n";
+                                callInst->getCalledOperand()->dump();
+                                assert(isa<LoadInst>(callInst->getCalledOperand()));
+                                outs()<<"The gep instruction gives us the function that was loaded from the vtable\n";
+                                auto functionPointer=cast<LoadInst>(callInst->getCalledOperand())->getPointerOperand();
+                                functionPointer->dump();
+                                if(isa<GetElementPtrInst>(functionPointer)){
+                                    outs()<<"Vtable contains more then one function, we need the one of em\n";
+                                    auto gep=cast<GetElementPtrInst>(functionPointer);
+                                    assert(gep->getNumOperands()==2);
+                                    outs()<<gep->getPointerOperandIndex()<<"\n";
+                                    assert(isa<ConstantInt>(gep->getOperand(1)));
+                                    rm.at(llvmNode.first->getName().str())->vtable.functions[0];
+                                }else{
+                                    outs()<<"Vtable contains only one function we load index 0\n";
+                                }
+
+                            }else{
+                                //Fixme: this should never need to create a node
+                                //implement the corresponding functionality in mcgManager
+                                assert(calledFunction->hasName());
+                                auto n2 = mcgManager.findOrCreateNode(calledFunction->getName().str());
+                                mcgManager.addEdge(n1, n2);
+                            }
+
                         } else {
                             //outs() << "Function:" << n1->getFunctionName() << " calls external node\n";
                         }
@@ -97,49 +120,17 @@ namespace genCC {
 
         llvm::outs() << "Completed insertion of all nodes and edges\n";
 
-
-        return *(mcgManager.getCallgraph());
+        return mcgManager;
     }
 
     bool work(Module &M, ModuleAnalysisManager *MA) {
         generateLibraryFunction(M);
         generateInitFunction(M);
 
-
-        /**Get function Information and dump to module
-        **/
-        /* Left in for demo purpose
-        {
-            std::string callGraph1;
-            for (Module::iterator F = M.begin(), Fe = M.end(); F != Fe; ++F) {
-                callGraph1.append("FunctionName:");
-                callGraph1.append(F->getName().str());
-                callGraph1.append(";Instructions:");
-                callGraph1.append(std::to_string(F->getInstructionCount()));
-                callGraph1.append(";");
-            }
-
-            auto insertableCallgraph1 = ConstantDataArray::getString(M.getContext(), callGraph1, true);
-            M.getOrInsertGlobal("CallGraph1", insertableCallgraph1->getType());
-            auto global1 = M.getNamedGlobal("CallGraph1");
-            global1->setLinkage(llvm::GlobalValue::InternalLinkage);
-            global1->setAlignment(MaybeAlign(1));
-            global1->setInitializer(insertableCallgraph1);
-
-            passToRuntimeComponent(M, global1);
-
-
-        }
-        */
-
         /** Use callgraph information provided by CGA Pass
-         *  and dump that to module aswell
+         *  and dump that to module as well
          */
-
         auto &cgResult = MA->getResult<CallGraphAnalysis>(M);
-        auto anaRes = MA->getResult<RecordAnalyzer>(M);
-        printRecordAnalyzerResults(outs(), anaRes);
-
         //cgResult.print(outs());
 
         std::string callGraph2;
@@ -147,19 +138,24 @@ namespace genCC {
 
         cgResult.print(llvmso);
 
-        auto mcg = llvmCallGraphToMetaCG(cgResult);
-        //maybe steal phasar aproach
-        //maybe use clang to pre generate virtual metadata in more readable format
-        //focus on more common cases and stay in llvm ir
 
-        auto insertableCallgraph2 = ConstantDataArray::getString(M.getContext(), callGraph2, true);
-        M.getOrInsertGlobal("CallGraph2", insertableCallgraph2->getType());
-        auto global2 = M.getNamedGlobal("CallGraph2");
+        auto anaRes = MA->getResult<RecordAnalyzer>(M);
+        auto& mcg = llvmCallGraphToMetaCG(cgResult,anaRes);
+        //printRecordAnalyzerResults(outs(), anaRes);
+
+        metacg::io::JsonSink jsSink;
+        metacg::io::MCGWriter mcgw(mcg);
+        mcgw.write(jsSink);
+        std::stringstream jsStream;
+        jsSink.output(jsStream);
+
+        auto insertableCallgraph = ConstantDataArray::getString(M.getContext(), jsStream.str(), true);
+        M.getOrInsertGlobal("CallGraph", insertableCallgraph->getType());
+        auto global2 = M.getNamedGlobal("CallGraph");
         global2->setLinkage(llvm::GlobalValue::InternalLinkage);
         global2->setAlignment(MaybeAlign(1));
-        global2->setInitializer(insertableCallgraph2);
+        global2->setInitializer(insertableCallgraph);
         passToRuntimeComponent(M, global2);
-
 
         return false;
     }

@@ -16,6 +16,8 @@ include_directories(${metaCGDir}/extern/json/include/)
 include_directories(${metaCGDir}/pgis/lib/include/)
 include_directories(${metaCGDir}/extern/src/extrap/extrap-3.0/include/)
 
+include_directories(/media/tim/Volume/Studium/Master/Semester3/MasterArbeit/MetaCG/build/)
+
 #Builds and compiles without this, but who knows if it breaks anything if we remove this
 include_directories(${metaCGDir}/spdlog-src/include/)
 
