@@ -1,30 +1,11 @@
-#include <llvm/Analysis/CallGraph.h>
-#include "llvm/IR/Function.h"
-#include "llvm/IR/LegacyPassManager.h"
-#include "llvm/Pass.h"
-#include "llvm/Passes/PassBuilder.h"
-#include "llvm/Passes/PassPlugin.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
-#include <llvm/Transforms/IPO/WholeProgramDevirt.h>
-#include <llvm/Demangle/Demangle.h>
-#include <llvm/Transforms/Utils/ModuleUtils.h>
-
-#include <clang/Analysis/CallGraph.h>
-
-#include "Callgraph.h"
-#include "MCGManager.h"
-#include "RecordAnalyzer.h"
-#include "MCGWriter.h"
-
+#include <Transform/GenCC.h>
 
 using namespace llvm;
 
 //static cl::opt<bool> enableGenCC("genCC", cl::init(false),
 //                                 cl::desc("generates call-graph component"));
 
-namespace genCC {
+namespace GenCC {
 
     void generateLibraryFunction(Module &M) {
         assert(M.getFunction("getGCC") == nullptr && "could not add getGCC runtime component call");
@@ -58,7 +39,7 @@ namespace genCC {
         FIlist.insert((--FIlist.end()), CallInst::Create(M.getFunction("getGCC"), bitCast));
     }
 
-    metacg::graph::MCGManager& llvmCallGraphToMetaCG(CallGraphAnalysis::Result &llvmCG, RecordMap rm) {
+    metacg::graph::MCGManager& llvmCallGraphToMetaCG(CallGraphAnalysis::Result &llvmCG, RecordAnalysis::RecordMap rm) {
 
         metacg::graph::MCGManager &mcgManager = metacg::graph::MCGManager::get();
         mcgManager.addToManagedGraphs("graph", std::make_unique<metacg::Callgraph>());
@@ -94,7 +75,7 @@ namespace genCC {
                                     assert(gep->getNumOperands()==2);
                                     outs()<<gep->getPointerOperandIndex()<<"\n";
                                     assert(isa<ConstantInt>(gep->getOperand(1)));
-                                    rm.at(llvmNode.first->getName().str())->vtable.functions[0];
+                                    //rm.at(llvmNode.first->getName().str())->vtable.functions[0];
                                 }else{
                                     outs()<<"Vtable contains only one function we load index 0\n";
                                 }
@@ -139,7 +120,7 @@ namespace genCC {
         cgResult.print(llvmso);
 
 
-        auto anaRes = MA->getResult<RecordAnalyzer>(M);
+        auto anaRes = MA->getResult<RecordAnalysis::RecordAnalyzer>(M);
         auto& mcg = llvmCallGraphToMetaCG(cgResult,anaRes);
         //printRecordAnalyzerResults(outs(), anaRes);
 
@@ -160,81 +141,6 @@ namespace genCC {
         return false;
     }
 
-
-    struct genCC : PassInfoMixin<genCC> {
-        PreservedAnalyses run(Module &M, ModuleAnalysisManager &MA) {
-            if (!work(M, &MA))
-                return PreservedAnalyses::all();
-            return PreservedAnalyses::none();
-        }
-    };
-
-    struct LegacyGenCC : public ModulePass {
-        static char ID;
-
-        LegacyGenCC() : ModulePass(ID) {}
-
-        bool runOnModule(Module &M) override { return work(M, nullptr); }
-    };
-
 } // namespace
 
-char genCC::LegacyGenCC::ID = 0;
 
-static RegisterPass<genCC::LegacyGenCC> genCCRegistrar("legacy-genCC", "generates Call Grap Components (legacy)",
-                                                       false /* Only looks at CFG */,
-                                                       false /* Analysis Pass */);
-
-/* Legacy PM Registration */
-static llvm::RegisterStandardPasses RegisterGenCC(
-        llvm::PassManagerBuilder::EP_OptimizerLast,
-        [](const llvm::PassManagerBuilder &Builder,
-           llvm::legacy::PassManagerBase &PM) { PM.add(new genCC::LegacyGenCC()); }
-);
-
-/* New PM Registration */
-//todo make registration separate, maybe use tblgen ?
-llvm::PassPluginLibraryInfo getGenCCPluginInfo() {
-    return {LLVM_PLUGIN_API_VERSION, "genCC", "0.1",
-            [](PassBuilder &PB) {
-                //allow registration via optlevel
-                //this currently does not work for lto
-                PB.registerOptimizerLastEPCallback(
-                        [](llvm::ModulePassManager &PM,
-                           llvm::PassBuilder::OptimizationLevel Level) {
-                            PM.addPass(genCC::genCC());
-                        });
-                //allow registration via pipeline parser
-                PB.registerPipelineParsingCallback(
-                        [](StringRef Name, llvm::ModulePassManager &PM,
-                           ArrayRef<llvm::PassBuilder::PipelineElement>) {
-                            if (Name == "genCC") {
-                                PM.addPass(genCC::genCC());
-                                return true;
-                            }
-                            return false;
-                        });
-                // #1 REGISTRATION FOR "opt -passes=print<type-hierarchy>"
-                PB.registerPipelineParsingCallback(
-                        [&](StringRef Name, ModulePassManager &MPM,
-                            ArrayRef<PassBuilder::PipelineElement>) {
-                            if (Name == "print<record-analysis>") {
-                                MPM.addPass(RecordAnalyzerPrinter(llvm::errs()));
-                                return true;
-                            }
-                            return false;
-                        });
-                // #2 REGISTRATION FOR "MAM.getResult<RecordAnalyzer>(Module)"
-                PB.registerAnalysisRegistrationCallback(
-                        [](ModuleAnalysisManager &MAM) {
-                            MAM.registerPass([&] { return RecordAnalyzer(); });
-                        });
-            }};
-}
-
-#ifndef LLVM_GENCC_LINK_INTO_TOOLS
-extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
-llvmGetPassPluginInfo() {
-    return getGenCCPluginInfo();
-}
-#endif

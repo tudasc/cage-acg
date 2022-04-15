@@ -1,0 +1,1 @@
+target_sources(plugin PUBLIC GenCC.cpp ${libmetacg} ${libspdlog})
