@@ -27,7 +27,6 @@ namespace RecordAnalysis {
         std::set<Function *> functions;
     };
 
-
     struct RecordInformation {
         std::string name;
         Vtable vtable;
@@ -36,7 +35,7 @@ namespace RecordAnalysis {
 
     using RecordMap = std::unordered_map<std::string, std::shared_ptr<RecordInformation>>;
 
-    static void printRecordAnalyzerResults(raw_ostream &OutS, const RecordMap &recordMap);
+    void printRecordAnalyzerResults(raw_ostream &OutS, const RecordMap &recordMap);
 
     const std::string StructPrefix = "struct.";
     const std::string ClassPrefix = "class.";
@@ -97,7 +96,7 @@ namespace RecordAnalysis {
 // Legacy PM interface
 //------------------------------------------------------------------------------
     struct LegacyRecordAnalyzer : public llvm::ModulePass {
-        static char ID;
+
 
         LegacyRecordAnalyzer() : llvm::ModulePass(ID) {}
 
@@ -112,6 +111,7 @@ namespace RecordAnalysis {
             printRecordAnalyzerResults(OutS, recordMap);
         }
 
+        static char ID;
         RecordMap recordMap;
     };
 

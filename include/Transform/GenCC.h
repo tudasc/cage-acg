@@ -24,7 +24,7 @@ using namespace llvm;
 //static cl::opt<bool> enableGenCC("genCC", cl::init(false),
 //                                 cl::desc("generates call-graph component"));
 
-namespace GenCC {
+namespace CallGraphGeneration {
 
     void generateLibraryFunction(Module &M);
 

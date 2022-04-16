@@ -8,7 +8,7 @@ namespace RecordAnalysis{
 
 using RecordMap = std::unordered_map<std::string, std::shared_ptr<RecordInformation>>;
 
-static void printRecordAnalyzerResults(raw_ostream &OutS, const RecordMap &recordMap) {
+void printRecordAnalyzerResults(raw_ostream &OutS, const RecordMap &recordMap) {
     //todo: implement this
     outs() << "There are: " << recordMap.size() << " vtables\n";
     for (const auto &elem: recordMap) {

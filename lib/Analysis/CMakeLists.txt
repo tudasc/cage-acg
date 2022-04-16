@@ -1,1 +1,1 @@
-target_sources(plugin PRIVATE RecordAnalyzer.cpp)
+target_sources(plugin PUBLIC RecordAnalyzer.cpp)

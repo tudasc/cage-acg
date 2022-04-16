@@ -10,25 +10,25 @@
 #include "Analysis/RecordAnalyzer.h"
 #include "Transform/GenCC.h"
 
-
+/* Legacy PM Registration */
+char RecordAnalysis::LegacyRecordAnalyzer::ID;
 static RegisterPass<RecordAnalysis::LegacyRecordAnalyzer> recordAnalyzerRegistrar("legacy-record-analysis", "generates type hierarchy and vtable information (legacy)",
                                                        true /* Only looks at CFG */,
                                                        true /* Analysis Pass */);
 
-static RegisterPass<GenCC::LegacyGenCC> genCCRegistrar("legacy-genCC", "generates Call Graph Components (legacy)",
-                                                       false /* Only looks at CFG */,
-                                                       false /* Analysis Pass */);
+char CallGraphGeneration::LegacyGenCC::ID;
+static RegisterPass<CallGraphGeneration::LegacyGenCC> genCCRegistrar("legacy-genCC", "generates Call Graph Components (legacy)",
+                                                                     false /* Only looks at CFG */,
+                                                                     false /* Analysis Pass */);
 
-
-/* Legacy PM Registration */
 static llvm::RegisterStandardPasses RegisterGenCC(
         llvm::PassManagerBuilder::EP_OptimizerLast,
         [](const llvm::PassManagerBuilder &Builder,
-           llvm::legacy::PassManagerBase &PM) { PM.add(new GenCC::LegacyGenCC()); }
+           llvm::legacy::PassManagerBase &PM) { PM.add(new CallGraphGeneration::LegacyGenCC()); }
 );
 
 /* New PM Registration */
-//todo make registration separate, maybe use tblgen ?
+AnalysisKey RecordAnalysis::RecordAnalyzer::Key;
 llvm::PassPluginLibraryInfo getPluginInfo() {
     return {LLVM_PLUGIN_API_VERSION, "genCC", "0.1",
             [](PassBuilder &PB) {
@@ -37,14 +37,14 @@ llvm::PassPluginLibraryInfo getPluginInfo() {
                 PB.registerOptimizerLastEPCallback(
                         [](llvm::ModulePassManager &PM,
                            llvm::PassBuilder::OptimizationLevel Level) {
-                            PM.addPass(GenCC::genCC());
+                            PM.addPass(CallGraphGeneration::genCC());
                         });
                 //allow registration via pipeline parser
                 PB.registerPipelineParsingCallback(
                         [](StringRef Name, llvm::ModulePassManager &PM,
                            ArrayRef<llvm::PassBuilder::PipelineElement>) {
                             if (Name == "genCC") {
-                                PM.addPass(GenCC::genCC());
+                                PM.addPass(CallGraphGeneration::genCC());
                                 return true;
                             }
                             return false;
@@ -68,11 +68,9 @@ llvm::PassPluginLibraryInfo getPluginInfo() {
 }
 
 
-char ID = 0;
 #ifndef LLVM_GENCC_LINK_INTO_TOOLS
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
-    outs()<<"Got called!!\n\n\n";
     return getPluginInfo();
 }
 #endif

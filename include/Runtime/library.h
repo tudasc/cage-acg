@@ -1,6 +1,5 @@
 #ifndef GENCCRT_LIBRARY_H
 #define GENCCRT_LIBRARY_H
-
-void hello();
-
+extern "C"
+void getGCC(void* data);
 #endif //GENCCRT_LIBRARY_H
