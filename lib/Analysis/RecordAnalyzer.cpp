@@ -2,40 +2,13 @@
 // Created by tim on 31.03.22.
 //
 
-#ifndef CALLGRAPHGENERATION_RECORDANALYZER_H
-#define CALLGRAPHGENERATION_RECORDANALYZER_H
+#include "Analysis/RecordAnalyzer.h"
 
-#include "llvm/Passes/PassBuilder.h"
-#include "llvm/Passes/PassPlugin.h"
-#include <llvm/Demangle/Demangle.h>
-#include <llvm/Support/Debug.h>
-
-using namespace llvm;
-
-struct TypeInfo {
-};
-
-struct Vtable {
-    int64_t offset = -1;
-    TypeInfo *typeInfo = nullptr;
-    //while order is important (i think)
-    //no function can occure twice, so we can use a set
-    //no we cant you dumbass
-    //we need indexing you idiot
-    std::set<Function*> functions;
-};
-
-
-struct RecordInformation {
-    std::string name;
-    Vtable vtable;
-    std::unordered_set<std::shared_ptr<RecordInformation>> parents;
-
-};
+namespace RecordAnalysis{
 
 using RecordMap = std::unordered_map<std::string, std::shared_ptr<RecordInformation>>;
 
-static void printRecordAnalyzerResults(raw_ostream &OutS, const RecordMap &recordMap) {
+void printRecordAnalyzerResults(raw_ostream &OutS, const RecordMap &recordMap) {
     //todo: implement this
     outs() << "There are: " << recordMap.size() << " vtables\n";
     for (const auto &elem: recordMap) {
@@ -52,17 +25,6 @@ static void printRecordAnalyzerResults(raw_ostream &OutS, const RecordMap &recor
 
     //outs()<<"Printing the type recordMap analysis result is not yet implmeneted\n";
 }
-
-const std::string StructPrefix = "struct.";
-const std::string ClassPrefix = "class.";
-const std::string VTablePrefix = "_ZTV";
-const std::string VTablePrefixDemang = "vtable for ";
-const std::string TypeInfoPrefix = "_ZTI";
-const std::string TypeInfoPrefixDemang = "typeinfo for ";
-const std::string TypeInfoNamePrefixDemang = "typeinfo name for ";
-const std::string NonVirtualThunkPrefix = "_ZThn";
-const std::string NonVirtualThunkPrefixDemang = "non-virtual thunk to ";
-const std::string VirtualThunkPrefixDemang = "virtual thunk to ";
 
 bool isTypeInfo(const std::string &VarName) {
     auto Demang = demangle(VarName);
@@ -133,7 +95,7 @@ std::string guessNameFromThunk(std::string VarName) {
     return ret;
 }
 
-Function *getThunkFunction(Function *vtableFunction) {
+Function* getThunkFunction(Function *vtableFunction) {
     //if the instruction before return is a call, it is a non trivial thunk,
     //the actual virtual function is the one before
     if (vtableFunction->back().back().getPrevNonDebugInstruction()) {
@@ -204,8 +166,7 @@ Vtable toVtable(const GlobalVariable &Global) {
     return ret;
 }
 
-
-StructType *getFunctionOriginStruct(Function &f) {
+StructType* getFunctionOriginStruct(Function &f) {
     if (auto functionType = f.getFunctionType()) {
         if (auto paramType = dyn_cast<PointerType>(functionType->getParamType(0))) {
             return paramType->getElementType()->isStructTy() ? cast<StructType>(paramType->getElementType())
@@ -215,8 +176,7 @@ StructType *getFunctionOriginStruct(Function &f) {
     return nullptr;
 }
 
-std::vector<std::shared_ptr<RecordInformation>>
-getPossibleVersionsOfFunction(RecordMap &thm, std::vector<Function *> vtable) {
+std::vector<std::shared_ptr<RecordInformation>> getPossibleVersionsOfFunction(RecordMap &thm, std::vector<Function *> vtable) {
     std::vector<std::shared_ptr<RecordInformation>> ret;
     outs() << "Thm contains: " << thm.size() << " Elements\n";
 
@@ -297,115 +257,4 @@ RecordMap work(Module &M) {
 
     return ret;
 }
-
-/*
-typeHierarchyDemo work2(Module &M) {
-    work(M);
-    std::unordered_map<std::string, const llvm::GlobalVariable *> ClearNameTIMap;
-    std::unordered_map<std::string, const llvm::GlobalVariable *> ClearNameTVMap;
-    for (const auto &Global: M.globals()) {
-        if (Global.hasName()) {
-            //get type info if available (rtti)
-            if (isTypeInfo(Global.getName().str())) {
-                auto Demang = demangle(Global.getName().str());
-                auto ClearName = removeTypeInfoPrefix(Demang);
-                ClearNameTIMap[ClearName] = &Global;
-            }
-            //todo: test if internal is the right criterion
-            if (isVTable(Global.getName().str()) && Global.hasInternalLinkage()) {
-                assert(Global.hasMetadata());
-                SmallVector<std::pair<unsigned int, MDNode *>> b;
-                Global.getAllMetadata(b);
-
-                outs() << "Dumping mdnode operands:\n";
-                for (auto elem: b) {
-                    auto a = elem.second->getOperand(1).get();
-                    outs() << MetadataAsValue::get(M.getContext(), a) << "\n";
-
-                }
-                outs() << "------------------------------\n";
-
-
-                auto Demang = demangle(Global.getName().str());
-                auto ClearName = removeVTablePrefix(Demang);
-                ClearNameTVMap[ClearName] = &Global;
-            }
-        } else {
-            outs() << "Found Global without name, dumping:\n";
-            Global.dump();
-        }
-    }
-
-    return {ClearNameTIMap, ClearNameTVMap};
 }
-*/
-
-struct RecordAnalyzer : public llvm::AnalysisInfoMixin<RecordAnalyzer> {
-    using Result = RecordMap;
-
-    //we are not a required pass, as we don't change semantics
-    static bool isRequired() { return false; }
-
-    Result run(llvm::Module &M, llvm::ModuleAnalysisManager &) {
-        return work(M);
-    }
-
-private:
-    static llvm::AnalysisKey Key;
-    friend struct llvm::AnalysisInfoMixin<RecordAnalyzer>;
-};
-
-//------------------------------------------------------------------------------
-// Legacy PM interface
-//------------------------------------------------------------------------------
-struct LegacyTypeHierarchyAnalyzer : public llvm::ModulePass {
-    static char ID;
-
-    LegacyTypeHierarchyAnalyzer() : llvm::ModulePass(ID) {}
-
-    bool runOnModule(llvm::Module &M) {
-        hierarchy = work(M);
-        return false;
-    }
-
-    // The print method must be implemented by Legacy analysis passes in order to
-    // print a human readable version of the analysis results:
-    void print(raw_ostream &OutS, Module const *) const {
-        printRecordAnalyzerResults(OutS, hierarchy);
-    }
-
-    RecordMap hierarchy;
-};
-
-
-//------------------------------------------------------------------------------
-// New PM interface for the printer pass
-//------------------------------------------------------------------------------
-class RecordAnalyzerPrinter : public llvm::PassInfoMixin<RecordAnalyzerPrinter> {
-public:
-    explicit RecordAnalyzerPrinter(llvm::raw_ostream &OutS) : OS(OutS) {}
-
-    PreservedAnalyses run(Module &M, ModuleAnalysisManager &MAM) {
-        auto recordMap = MAM.getResult<RecordAnalyzer>(M);
-        printRecordAnalyzerResults(OS, recordMap);
-        return PreservedAnalyses::all();
-    }
-
-    //We always want do output out results if we are explicitly asked for it
-    static bool isRequired() { return true; }
-
-private:
-    llvm::raw_ostream &OS;
-};
-
-
-char LegacyTypeHierarchyAnalyzer::ID = 0;
-AnalysisKey RecordAnalyzer::Key;
-
-// #1 REGISTRATION FOR "opt -analyze -legacy-static-cc"
-static RegisterPass<LegacyTypeHierarchyAnalyzer>
-        typeHierarchyRegister(/*PassArg=*/"legacy-type-hierarchy",
-        /*Name=*/"LegacyTypeHierarchyAnalyzer",
-        /*CFGOnly=*/true,
-        /*is_analysis=*/true);
-#endif
