@@ -13,6 +13,12 @@ if(NOT DEFINED metaCGDir)
   #find_package(MetaCG REQUIRED CONFIG)
 endif ()
 
+if(NOT DEFINED pluginCapableLLD)
+  message(WARNING "No plugin capable LLD linker was found"
+          "Use -DpluginCapableLLD=<PATH> to set path")
+endif()
+
+
 set(libmetacg ${metaCGDir}/build/graph/libmetacg.so)
 set(libspdlog ${metaCGDir}/build/spdlog-build/libspdlogd.so)
 include_directories(${metaCGDir}/extern/json/include/)
@@ -27,3 +33,6 @@ include_directories(${metaCGDir}/graph/include/)
 
 include_directories(include)
 add_subdirectory(lib)
+
+#configure tests last
+add_subdirectory(test)

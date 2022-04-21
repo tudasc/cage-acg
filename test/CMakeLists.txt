@@ -1,0 +1,4 @@
+add_subdirectory(1_LTO_POC)
+add_subdirectory(2_Simple_Inheritance_POC)
+add_subdirectory(3_Virtual_Inheritance_POC)
+add_subdirectory(4_Diamond_Inheritance_POC)
