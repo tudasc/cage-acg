@@ -7,4 +7,12 @@
 
 **/compile.sh
 
+#ignore all files generated during testing
+/test/*/*.ll
+/test/*/*.bc
+/test/*/*.o
+/test/*/*.s
+/test/*/*.out
+/test/*/*.out.resolution.txt
+
 
