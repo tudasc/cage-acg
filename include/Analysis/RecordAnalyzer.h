@@ -24,7 +24,7 @@ namespace RecordAnalysis {
         //no function can occure twice, so we can use a set
         //no we cant you dumbass
         //we need indexing you idiot
-        std::set<Function *> functions;
+        std::vector<Function *> functions;
     };
 
     struct RecordInformation {
@@ -69,9 +69,6 @@ namespace RecordAnalysis {
     Vtable toVtable(const GlobalVariable &Global);
 
     StructType *getFunctionOriginStruct(Function &f);
-
-    std::vector<std::shared_ptr<RecordInformation>>
-    getPossibleVersionsOfFunction(RecordMap &thm, std::vector<Function *> vtable);
 
     void linkTypeHierarchyMap(RecordMap &map, Module &M);
 

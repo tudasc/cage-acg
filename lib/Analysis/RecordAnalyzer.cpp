@@ -127,9 +127,7 @@ Vtable toVtable(const GlobalVariable &Global) {
         assert(vtableStruct->getAggregateElement(i)->getType()->isArrayTy());
         auto *vtable = cast<ConstantArray>(vtableStruct->getAggregateElement(i));
         for (auto *elem: vtable->operand_values()) {
-
             auto constant = cast<Constant>(elem);
-
             //This skips all null entries
             //These exist for missing: Top Offsets, RTTI, Some other stuff
             //This is bad and should be improved by switching handling according to vtable category
@@ -150,11 +148,9 @@ Vtable toVtable(const GlobalVariable &Global) {
                 //Todo: find in standard, or at least validate empirically
                 if (isThunk(vtableFunction->getName().str())) {
                     //outs() << "Handling thunk: " << vtableFunction->getName() << "\n";
-                    //ret.functions.push_back(getThunkFunction(vtableFunction));
-                    ret.functions.insert(getThunkFunction(vtableFunction));
+                    ret.functions.push_back(getThunkFunction(vtableFunction));
                 } else {
-                    //ret.functions.push_back(vtableFunction);
-                    ret.functions.insert(vtableFunction);
+                    ret.functions.push_back(vtableFunction);
                 }
             } else {
                 //outs() << "Probably Pointer Offset or TypeInfo:";
@@ -176,35 +172,9 @@ StructType* getFunctionOriginStruct(Function &f) {
     return nullptr;
 }
 
-std::vector<std::shared_ptr<RecordInformation>> getPossibleVersionsOfFunction(RecordMap &thm, std::vector<Function *> vtable) {
-    std::vector<std::shared_ptr<RecordInformation>> ret;
-    outs() << "Thm contains: " << thm.size() << " Elements\n";
-
-    for (auto f: vtable) {
-        outs() << "Checking function: " << f->getName();
-        if (auto origin = getFunctionOriginStruct(*f)) {
-            assert(origin->hasName());
-            auto numOccurrences = thm.count(removeStructPrefix(origin->getName().str()));
-            if (numOccurrences == 0) {
-                outs() << "TypeHierarchyMap does not contain " << origin->getName() << "\n";
-            } else if (numOccurrences == 1) {
-                outs() << "TypeHierarchyMap contains " << origin->getName() << "\n";
-            } else {
-                outs() << "TypeHierarchyMap contains more than one version of " << origin->getName() << "\n";
-                assert(false);
-            }
-        } else {
-            outs() << "Could not find originStruct for: " << f->getName();
-        }
-    }
-
-    return ret;
-}
-
 void linkTypeHierarchyMap(RecordMap &map, Module& M) {
     for(auto& g : M.getGlobalList()){
         if(g.hasName() && isVTable(g.getName().str())){
-
             auto gName= removeVTablePrefix(demangle(g.getName().str()));
             SmallVector<std::pair<unsigned, MDNode *>> MD;
             g.getAllMetadata(MD);
@@ -221,7 +191,6 @@ void linkTypeHierarchyMap(RecordMap &map, Module& M) {
                     auto parentName=demangledTypeInfoRef.drop_front(TypeInfoNamePrefixDemang.size()).str();
                     map.at(gName)->parents.insert(map.at(parentName));
                 }
-
             }
         }
     }
