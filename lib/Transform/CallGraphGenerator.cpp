@@ -1,4 +1,4 @@
-#include <Transform/GenCC.h>
+#include <Transform/CallGraphGenerator.h>
 
 using namespace llvm;
 
@@ -39,7 +39,7 @@ namespace CallGraphGeneration {
         FIlist.insert((--FIlist.end()), CallInst::Create(M.getFunction("getGCC"), bitCast));
     }
 
-    metacg::graph::MCGManager& llvmCallGraphToMetaCG(CallGraphAnalysis::Result &llvmCG, RecordAnalysis::RecordMap rm) {
+    metacg::graph::MCGManager &llvmCallGraphToMetaCG(CallGraphAnalysis::Result &llvmCG, RecordAnalysis::RecordMap rm) {
 
         metacg::graph::MCGManager &mcgManager = metacg::graph::MCGManager::get();
         mcgManager.addToManagedGraphs("graph", std::make_unique<metacg::Callgraph>());
@@ -59,28 +59,44 @@ namespace CallGraphGeneration {
                             //Todo: probably should use call base ?
                             assert(isa<CallInst>(node.first.getValue()));
                             auto callInst = cast<CallInst>(node.first.getValue());
-                            auto* calledFunction = callInst->getCalledFunction();
-                            if(calledFunction == nullptr){
-                                outs()<<"Call was to:\n";
+                            auto *calledFunction = callInst->getCalledFunction();
+                            if (calledFunction == nullptr) {
+                                outs() << "Call was to:\n";
                                 callInst->dump();
-                                outs()<<"This is a function Pointer that was just loaded\n";
+                                outs() << "This is a function Pointer\n";
                                 callInst->getCalledOperand()->dump();
-                                assert(isa<LoadInst>(callInst->getCalledOperand()));
-                                outs()<<"The gep instruction gives us the function that was loaded from the vtable\n";
-                                auto functionPointer=cast<LoadInst>(callInst->getCalledOperand())->getPointerOperand();
-                                functionPointer->dump();
-                                if(isa<GetElementPtrInst>(functionPointer)){
-                                    outs()<<"Vtable contains more then one function, we need the one of em\n";
-                                    auto gep=cast<GetElementPtrInst>(functionPointer);
-                                    assert(gep->getNumOperands()==2);
-                                    outs()<<gep->getPointerOperandIndex()<<"\n";
-                                    assert(isa<ConstantInt>(gep->getOperand(1)));
-                                    //rm.at(llvmNode.first->getName().str())->vtable.functions[0];
-                                }else{
-                                    outs()<<"Vtable contains only one function we load index 0\n";
+                                //might also be bitcast in case of shared library load
+                                if (isa<LoadInst>(callInst->getCalledOperand())) {
+                                    outs()<<"FunctionPointer was just loaded\n";
+                                    outs()
+                                            << "The gep instruction gives us the function that was loaded from the vtable\n";
+                                    auto functionPointer = cast<LoadInst>(
+                                            callInst->getCalledOperand())->getPointerOperand();
+                                    functionPointer->dump();
+                                    if (isa<GetElementPtrInst>(functionPointer)) {
+                                        outs() << "Vtable contains more then one function, we need the one of eeeem\n";
+                                        auto gep = cast<GetElementPtrInst>(functionPointer);
+                                        assert(gep->getNumOperands() == 2);
+                                        outs() << gep->getPointerOperandIndex() << "\n";
+                                        assert(isa<ConstantInt>(gep->getOperand(1)));
+                                        int vtableIndex = cast<ConstantInt>(
+                                                gep->getOperand(1))->getUniqueInteger().getSExtValue();
+                                        outs() << "Vtable Index:" << vtableIndex << "\nFunction:";
+                                        rm.at(llvmNode.first->getName().str())->vtable.functions[vtableIndex]->dump();
+                                        outs() << "\n\n";
+                                    } else {
+                                        outs() << "Vtable contains only one function we load index 0\n";
+                                    }
+                                } else if (isa<BitCastInst>(callInst->getCalledOperand())) {
+                                    outs()<<"FunctionPointer was generated via bitcast\n";
+                                } else {
+                                    outs() << "Unknown Instruction:\n";
+                                    callInst->getCalledOperand()->dump();
+                                    continue;
                                 }
 
-                            }else{
+
+                            } else {
                                 //Fixme: this should never need to create a node
                                 //implement the corresponding functionality in mcgManager
                                 assert(calledFunction->hasName());
@@ -104,6 +120,7 @@ namespace CallGraphGeneration {
         return mcgManager;
     }
 
+
     bool work(Module &M, ModuleAnalysisManager *MA) {
         generateLibraryFunction(M);
         generateInitFunction(M);
@@ -121,11 +138,15 @@ namespace CallGraphGeneration {
 
 
         auto anaRes = MA->getResult<RecordAnalysis::RecordAnalyzer>(M);
-        auto& mcg = llvmCallGraphToMetaCG(cgResult,anaRes);
+        auto &mcg = llvmCallGraphToMetaCG(cgResult, anaRes);
         //printRecordAnalyzerResults(outs(), anaRes);
 
         metacg::io::JsonSink jsSink;
-        metacg::io::MCGWriter mcgw(mcg);
+        //TODO: M.getName does not return a "nice" name during LTO, maybe allow for passing a parameter to name the control flow graph
+        std::string s("GenCC");
+        metacg::MCGGeneratorVersionInfo mcgVI = {s, 0, 1, "NO_GIT_SHA_AVAILABLE"};
+        metacg::io::MCGWriter mcgw(mcg, genCCInfo(M.getName()));
+
         mcgw.write(jsSink);
         std::stringstream jsStream;
         jsSink.output(jsStream);
@@ -139,6 +160,15 @@ namespace CallGraphGeneration {
         passToRuntimeComponent(M, global2);
 
         return false;
+    }
+
+    metacg::MCGFileInfo genCCInfo(StringRef ModuleName) {
+        metacg::MCGFileFormatInfo ffi(0, 1);
+        ffi.cgFieldName = "_CG";
+        ffi.metaInfoFieldName = "_MetaCG";
+        std::string name = "GenCC";
+        metacg::MCGGeneratorVersionInfo gvi = {name, 0, 1, "NO_GIT_SHA_AVAILABLE"};
+        return {ffi, gvi};
     }
 
 } // namespace

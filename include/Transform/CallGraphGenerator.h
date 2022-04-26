@@ -32,6 +32,7 @@ namespace CallGraphGeneration {
 
     void passToRuntimeComponent(Module &M, Value *Arg);
 
+    metacg::MCGFileInfo genCCInfo(StringRef ModuleName);
     metacg::graph::MCGManager& llvmCallGraphToMetaCG(CallGraphAnalysis::Result &llvmCG, RecordAnalysis::RecordMap rm);
 
     bool work(Module &M, ModuleAnalysisManager *MA);
