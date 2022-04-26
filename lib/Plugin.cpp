@@ -8,7 +8,7 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
 #include "Analysis/RecordAnalyzer.h"
-#include "Transform/GenCC.h"
+#include "Transform/CallGraphGenerator.h"
 
 /* Legacy PM Registration */
 char RecordAnalysis::LegacyRecordAnalyzer::ID;
