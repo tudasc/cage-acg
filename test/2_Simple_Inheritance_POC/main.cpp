@@ -41,7 +41,7 @@ int main(int argc, char** argv){
       b= new Base();
   }
 
-  printf("%d\n",b->meh());
+  printf("%d\n",b->bar());
 
   delete b;
 }

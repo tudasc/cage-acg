@@ -100,6 +100,7 @@ Function* getThunkFunction(Function *vtableFunction) {
     //the actual virtual function is the one before
     if (vtableFunction->back().back().getPrevNonDebugInstruction()) {
         assert(isa<ReturnInst>(vtableFunction->back().back()));
+        //Dont think invoke can be generated here ?
         assert(isa<CallInst>(vtableFunction->back().back().getPrevNonDebugInstruction()));
         assert(cast<ReturnInst>(vtableFunction->back().back()).getNumOperands() == 1);
         cast<ReturnInst>(vtableFunction->back().back()).getOperand((unsigned int) 0)->dump();
@@ -189,7 +190,11 @@ void linkTypeHierarchyMap(RecordMap &map, Module& M) {
                     llvm::StringRef demangledTypeInfoRef(demangledTypeInfo);
                     assert( demangledTypeInfoRef.startswith(TypeInfoNamePrefixDemang));
                     auto parentName=demangledTypeInfoRef.drop_front(TypeInfoNamePrefixDemang.size()).str();
-                    map.at(gName)->parents.insert(map.at(parentName));
+                    if(map.count(parentName)==0 || map.count(gName)==0){
+                      outs()<<"parentName: "<<parentName<<" count: "<<map.count(parentName) << "child: "<<map.count(gName)<<"\n";
+                      continue;
+                    }
+                    map.at(parentName)->parents.insert(map.at(gName));
                 }
             }
         }

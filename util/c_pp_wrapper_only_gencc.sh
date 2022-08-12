@@ -6,6 +6,8 @@ libgenCC=/media/tim/Volume/Studium/Master/Semester3/MasterArbeit/Code/gencc/cmak
 runtimeComponent=/media/tim/Volume/Studium/Master/Semester3/MasterArbeit/Code/gencc/cmake-build-debug/lib/Runtime/libgenCCRT.so
 runtimeComponent_path=$(dirname "${runtimeComponent}")
 
+echoerr() { echo "$@" 1>&2; }
+
 function get_clang(){
   readonly clang_pp=clang++-13
   readonly clang=clang-13
@@ -21,8 +23,6 @@ function is_cpp() {
   done
   return 0
 }
-
-
 
 function get_first_compile(){
   local counter=0
@@ -47,8 +47,6 @@ function get_first_link(){
   done 
 echo "Could not detect link statement!"
 return $counter
-
-
 }
 
 function split_pipeline(){
@@ -74,11 +72,9 @@ function split_pipeline(){
   link_statements_num=$(($link_statements_end-$link_statements_begin))
   #echo "lsn:$link_statements_num"
   
-  
   clang_compile_invoke=("${clang_output[@]:$compile_statements_begin:$compile_statements_num}")
   clang_link_invoke=("${clang_output[@]:$link_statements_begin:$link_statements_num}")
 }
-
 
 function filter_options(){
   for arg in "$@"; do
@@ -93,18 +89,6 @@ function filter_options(){
     esac
   done
 }
-
-function is_linking() {
-  for arg in "$@"; do
-    case "$arg" in
-    -c | -S | -E)
-      return 0
-    ;;
-    esac
-  done
-  return 1
-}
-
 
 function main_in(){
   get_clang
@@ -123,7 +107,7 @@ function main_in(){
   #  compile_pipeline="$($clang -### -flto "$@" 2>&1)"
   #fi
   
-  echo "Using C++ compiler"
+  #echo "Using C++ compiler"
   compile_pipeline="$($clang_pp -### -flto "$@" 2>&1)"
     
   split_pipeline "$compile_pipeline"
@@ -132,8 +116,9 @@ function main_in(){
     if [[ $echo_only -eq 1 ]]; then
       echo "Echo Compile:$single_compile"
     else
-      echo "Eval Compile:$single_compile"
-      eval "$single_compile"
+      #echo "Eval Compile:$single_compile"
+      echoerr "Compile"
+      eval "time $single_compile"
     fi  
   done
 
@@ -146,8 +131,9 @@ function main_in(){
     if [[ $echo_only -eq 1 ]]; then
       echo "Echo Link: ${split_link[@]}"
     else
-      echo "Eval Link: ${split_link[@]}"
-      eval ${split_link[@]}
+      #echo "Eval Link: ${split_link[@]}"
+      echoerr "Link"
+      eval "time ${split_link[@]}"
     fi  
   done
   
@@ -159,5 +145,3 @@ echo "         Gencc wrapper got called"
 echo "-------------------------------------------"
 
 main_in "$@"
-
-

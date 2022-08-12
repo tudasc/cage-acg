@@ -1,0 +1,634 @@
+Controlflow diverted to runtime component: 0
+{
+  "_CG": {
+    "{ _ZN4Base3barEv, _ZN7Derived3barEv }": {
+      "callees": [
+        [],
+        []
+      ],
+      "callers": [
+        [],
+        []
+      ],
+      "hasBody": [
+        true,
+        true
+      ],
+      "isVirtual": true,
+      "meta": null
+    },
+    "{ _ZN4Base3fooEv }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        []
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ _ZN4BaseC2Ev }": {
+      "callees": [
+        [
+          "puts"
+        ]
+      ],
+      "callers": [
+        [
+          "_ZN7DerivedC2Ev",
+          "main"
+        ]
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ _ZN4BaseD0Ev, _ZN7DerivedD0Ev }": {
+      "callees": [
+        [
+          "_ZN4BaseD2Ev",
+          "_ZdlPv"
+        ],
+        [
+          "_ZN7DerivedD2Ev",
+          "_ZdlPv"
+        ]
+      ],
+      "callers": [
+        [],
+        []
+      ],
+      "hasBody": [
+        true,
+        true
+      ],
+      "isVirtual": true,
+      "meta": null
+    },
+    "{ _ZN4BaseD2Ev }": {
+      "callees": [
+        [
+          "puts"
+        ]
+      ],
+      "callers": [
+        [
+          "_ZN4BaseD0Ev",
+          "_ZN7DerivedD2Ev"
+        ]
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ _ZN7Derived3fooEv }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        []
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ _ZN7DerivedC2Ev }": {
+      "callees": [
+        [
+          "_ZN4BaseC2Ev",
+          "puts"
+        ]
+      ],
+      "callers": [
+        [
+          "main"
+        ]
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ _ZN7DerivedD2Ev }": {
+      "callees": [
+        [
+          "_ZN4BaseD2Ev",
+          "puts"
+        ]
+      ],
+      "callers": [
+        [
+          "_ZN7DerivedD0Ev"
+        ]
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ _ZdlPv }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        [
+          "_ZN4BaseD0Ev",
+          "_ZN7DerivedD0Ev"
+        ]
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ _Znwm }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        [
+          "main"
+        ]
+      ],
+      "hasBody": [
+        false
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ __gxx_personality_v0 }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        []
+      ],
+      "hasBody": [
+        false
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ __isoc99_scanf }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        [
+          "main"
+        ]
+      ],
+      "hasBody": [
+        false
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ genCCInit }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        []
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ getGCC }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        []
+      ],
+      "hasBody": [
+        false
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ main }": {
+      "callees": [
+        [
+          "_ZN4BaseC2Ev",
+          "_ZN7DerivedC2Ev",
+          "_Znwm",
+          "__isoc99_scanf",
+          "printf"
+        ]
+      ],
+      "callers": [
+        []
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ printf }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        [
+          "main"
+        ]
+      ],
+      "hasBody": [
+        false
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ puts }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        [
+          "_ZN4BaseC2Ev",
+          "_ZN4BaseD2Ev",
+          "_ZN7DerivedC2Ev",
+          "_ZN7DerivedD2Ev"
+        ]
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    }
+  },
+  "_MetaCG": {
+    "generator": {
+      "name": "GenCC",
+      "sha": "NO_GIT_SHA_AVAILABLE",
+      "version": "0.1"
+    },
+    "version": "3.0"
+  }
+}
+Read
+[2022-05-31 10:32:48.120] [console] [info] The metacg (version 3.0) file was generated with GenCC (version: 0.1)
+Key:{ _ZN4Base3barEv, _ZN7Derived3barEv }
+Key:{ _ZN4Base3fooEv }
+Key:{ _ZN4BaseC2Ev }
+Key:{ _ZN4BaseD0Ev, _ZN7DerivedD0Ev }
+Key:{ _ZN4BaseD2Ev }
+Key:{ _ZN7Derived3fooEv }
+Key:{ _ZN7DerivedC2Ev }
+Key:{ _ZN7DerivedD2Ev }
+Key:{ _ZdlPv }
+Key:{ _Znwm }
+Key:{ __gxx_personality_v0 }
+Key:{ __isoc99_scanf }
+Key:{ genCCInit }
+Key:{ getGCC }
+Key:{ main }
+Key:{ printf }
+Key:{ puts }
+Linking
+Key:{ _ZN4Base3barEv, _ZN7Derived3barEv }
+Callees:[[],[]]
+Key:{ _ZN4Base3fooEv }
+Callees:[[]]
+Key:{ _ZN4BaseC2Ev }
+Callees:[["puts"]]
+Key:{ _ZN4BaseD0Ev, _ZN7DerivedD0Ev }
+Callees:[["_ZN4BaseD2Ev","_ZdlPv"],["_ZN7DerivedD2Ev","_ZdlPv"]]
+Key:{ _ZN4BaseD2Ev }
+Callees:[["puts"]]
+Key:{ _ZN7Derived3fooEv }
+Callees:[[]]
+Key:{ _ZN7DerivedC2Ev }
+Callees:[["_ZN4BaseC2Ev","puts"]]
+Key:{ _ZN7DerivedD2Ev }
+Callees:[["_ZN4BaseD2Ev","puts"]]
+Key:{ _ZdlPv }
+Callees:[[]]
+Key:{ _Znwm }
+Callees:[[]]
+Key:{ __gxx_personality_v0 }
+Callees:[[]]
+Key:{ __isoc99_scanf }
+Callees:[[]]
+Key:{ genCCInit }
+Callees:[[]]
+Key:{ getGCC }
+Callees:[[]]
+Key:{ main }
+Callees:[["_ZN4BaseC2Ev","_ZN7DerivedC2Ev","_Znwm","__isoc99_scanf","printf"]]
+Key:{ printf }
+Callees:[[]]
+Key:{ puts }
+Callees:[[]]
+END
+[2022-05-31 10:32:48.121] [console] [info] The region "VersionThreeMetaCGReader::read" required 0 seconds to finish.
+[ { Ptr to:"puts" } | { Ptr to:"printf" } | { Ptr to:"getGCC" } | { Ptr to:"_ZN4Base3fooEv" } | { Ptr to:"_ZN4BaseD0Ev" , Ptr to:"_ZN7DerivedD0Ev" } | { Ptr to:"_ZN4BaseD2Ev" } | { Ptr to:"_ZN4Base3barEv" , Ptr to:"_ZN7Derived3barEv" } | { Ptr to:"_ZdlPv" } | { Ptr to:"genCCInit" } | { Ptr to:"_ZN4BaseC2Ev" } | { Ptr to:"main" } | { Ptr to:"_ZN7Derived3fooEv" } | { Ptr to:"_ZN7DerivedC2Ev" } | { Ptr to:"__isoc99_scanf" } | { Ptr to:"_ZN7DerivedD2Ev" } | { Ptr to:"_Znwm" } | { Ptr to:"__gxx_personality_v0" } ]
+{
+  "_CG": {
+    "{ _ZN4Base3barEv, _ZN7Derived3barEv }": {
+      "callees": [
+        [],
+        []
+      ],
+      "callers": [
+        [],
+        []
+      ],
+      "hasBody": [
+        true,
+        true
+      ],
+      "isVirtual": true,
+      "meta": null
+    },
+    "{ _ZN4Base3fooEv }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        []
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ _ZN4BaseC2Ev }": {
+      "callees": [
+        [
+          "puts"
+        ]
+      ],
+      "callers": [
+        [
+          "_ZN7DerivedC2Ev",
+          "main"
+        ]
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ _ZN4BaseD0Ev, _ZN7DerivedD0Ev }": {
+      "callees": [
+        [
+          "_ZN4BaseD2Ev",
+          "_ZdlPv"
+        ],
+        [
+          "_ZN7DerivedD2Ev",
+          "_ZdlPv"
+        ]
+      ],
+      "callers": [
+        [],
+        []
+      ],
+      "hasBody": [
+        true,
+        true
+      ],
+      "isVirtual": true,
+      "meta": null
+    },
+    "{ _ZN4BaseD2Ev }": {
+      "callees": [
+        [
+          "puts"
+        ]
+      ],
+      "callers": [
+        [
+          "_ZN4BaseD0Ev",
+          "_ZN7DerivedD2Ev"
+        ]
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ _ZN7Derived3fooEv }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        []
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ _ZN7DerivedC2Ev }": {
+      "callees": [
+        [
+          "_ZN4BaseC2Ev",
+          "puts"
+        ]
+      ],
+      "callers": [
+        [
+          "main"
+        ]
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ _ZN7DerivedD2Ev }": {
+      "callees": [
+        [
+          "_ZN4BaseD2Ev",
+          "puts"
+        ]
+      ],
+      "callers": [
+        [
+          "_ZN7DerivedD0Ev"
+        ]
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ _ZdlPv }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        [
+          "_ZN4BaseD0Ev",
+          "_ZN7DerivedD0Ev"
+        ]
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ _Znwm }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        [
+          "main"
+        ]
+      ],
+      "hasBody": [
+        false
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ __gxx_personality_v0 }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        []
+      ],
+      "hasBody": [
+        false
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ __isoc99_scanf }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        [
+          "main"
+        ]
+      ],
+      "hasBody": [
+        false
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ genCCInit }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        []
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ getGCC }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        []
+      ],
+      "hasBody": [
+        false
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ main }": {
+      "callees": [
+        [
+          "_ZN4BaseC2Ev",
+          "_ZN7DerivedC2Ev",
+          "_Znwm",
+          "__isoc99_scanf",
+          "printf"
+        ]
+      ],
+      "callers": [
+        []
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ printf }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        [
+          "main"
+        ]
+      ],
+      "hasBody": [
+        false
+      ],
+      "isVirtual": false,
+      "meta": null
+    },
+    "{ puts }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        [
+          "_ZN4BaseC2Ev",
+          "_ZN4BaseD2Ev",
+          "_ZN7DerivedC2Ev",
+          "_ZN7DerivedD2Ev"
+        ]
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    }
+  },
+  "_MetaCG": {
+    "generator": {
+      "name": "GenCC",
+      "sha": "NO_GIT_SHA_AVAILABLE",
+      "version": "0.1"
+    },
+    "version": "3.0"
+  }
+}
+Runtimecomponent finished, resuming program
+Call to Base Constructor
+Call to Derived Constructor
+20
+Call to Derived Destructor
+Call to Base Destructor

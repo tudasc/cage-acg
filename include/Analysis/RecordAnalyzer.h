@@ -20,10 +20,6 @@ namespace RecordAnalysis {
     struct Vtable {
         int64_t offset = -1;
         TypeInfo *typeInfo = nullptr;
-        //while order is important (i think)
-        //no function can occure twice, so we can use a set
-        //no we cant you dumbass
-        //we need indexing you idiot
         std::vector<Function *> functions;
     };
 

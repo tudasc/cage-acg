@@ -1,0 +1,25 @@
+{
+  "_CG": {
+    "{ myFunction }": {
+      "callees": [
+        []
+      ],
+      "callers": [
+        []
+      ],
+      "hasBody": [
+        true
+      ],
+      "isVirtual": false,
+      "meta": null
+    }
+  },
+  "_MetaCG": {
+    "generator": {
+      "name": "GenCC",
+      "sha": "NO_GIT_SHA_AVAILABLE",
+      "version": "0.1"
+    },
+    "version": "3.0"
+  }
+}

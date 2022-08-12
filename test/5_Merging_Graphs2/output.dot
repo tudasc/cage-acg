@@ -1,0 +1,7 @@
+digraph code {
+rankdir=LR;
+outputorder=edgesfirst;
+graph [bgcolor=azure fontname="Courier" splines="curved"];
+node [penwidth=4 fillcolor=white style=filled fontname="Courier Bold" fontsize=14 shape=box];
+edge [arrowhead="normal" style=bold weight=2];
+}

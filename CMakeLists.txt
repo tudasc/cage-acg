@@ -36,3 +36,8 @@ add_subdirectory(lib)
 
 #configure tests last
 add_subdirectory(test)
+
+get_property(GENCC_PLUGIN_DIR TARGET plugin PROPERTY PROBABLE_PATH)
+get_property(GENCC_RUNTIME_DIR TARGET genCCRT PROPERTY PROBABLE_PATH)
+
+configure_file( ${CMAKE_SOURCE_DIR}/util/gencc_wrapper.sh  ${CMAKE_SOURCE_DIR}/util/gencc_wrapper_config.sh @ONLY)
