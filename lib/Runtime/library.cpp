@@ -34,7 +34,7 @@ void dump() {
     for(int i=0;i<genCCRT_NumOfReferences;i++){
         std::string currentGraph=std::to_string(i).append("emptyGraph");
         printf("Callgraph: %s \n",currentGraph.c_str());
-        std::cout<<genCCRT_mcgManager.getCallgraph(currentGraph);
+        std::cout<<genCCRT_mcgManager.getCallgraph();
         printf("--------------------------------------\n\n");
     }
 }
@@ -44,11 +44,11 @@ void add(char *data) {
     auto JsonString = std::string(data);
     nlohmann::basic_json json = nlohmann::json::parse(JsonString);
     metacg::io::JsonSource jsonSource(json);
-    metacg::io::VersionThreeMetaCGReader metaCgReader(jsonSource);
+    //metacg::io::VersionThreeMetaCGReader metaCgReader(jsonSource);
 
     genCCRT_mcgManager.addToManagedGraphs(std::to_string((genCCRT_NumOfReferences)).append("emptyGraph"),
                                           std::make_unique<metacg::Callgraph>());
-    metaCgReader.read(genCCRT_mcgManager);
+    //metaCgReader.read(genCCRT_mcgManager);
     genCCRT_NumOfReferences++;
 }
 
@@ -58,7 +58,7 @@ void merge(char *data, int source = 0, int target = 0) {
         printf("Merging Data into %s\n",(std::to_string(0).append("emptyGraph").c_str()));
         auto targetGraph = std::to_string(0).append("emptyGraph");
         auto sourceGraph = std::to_string((genCCRT_NumOfReferences-1)).append("emptyGraph");
-        genCCRT_mcgManager.mergeGraphs(targetGraph, sourceGraph);
+        //genCCRT_mcgManager.mergeGraphs(targetGraph, sourceGraph);
     } else {
         printf("Merging Data from Graph %d into Data from Graph %d\n", source, target);
         printf("This is currently unimplemented \n");
@@ -66,11 +66,11 @@ void merge(char *data, int source = 0, int target = 0) {
 }
 
 void toFile(){
-    genCCRT_mcgManager.dumpToFile("",true);
+    //genCCRT_mcgManager.dumpToFile("",true);
 }
 
 void allToFile(){
-    genCCRT_mcgManager.dumpAllGraphsToFile();
+    //genCCRT_mcgManager.dumpAllGraphsToFile();
 }
 
 void getGCC(void *data) {

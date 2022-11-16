@@ -17,7 +17,7 @@ void printRecordAnalyzerResults(raw_ostream &OutS, const RecordMap &recordMap) {
             outs() << demangle(elem2->getName().str()) << "\n";
         }
         outs() << "A Pointer of this type could call methods from:\n";
-        for (auto elem2: elem.second->parents) {
+        for (auto elem2: elem.second->callSet) {
             outs() << elem2->name << "\n";
         }
     }
@@ -72,6 +72,14 @@ std::string removeStructPrefix(std::string VarName) {
     return VarName;
 }
 
+std::string removeClassPrefix(std::string VarName) {
+        llvm::StringRef SR(VarName);
+        if (SR.startswith(ClassPrefix)) {
+            return SR.drop_front(ClassPrefix.size()).str();
+        }
+        return VarName;
+    }
+
 std::string removeThunkPrefix(std::string VarName) {
     llvm::StringRef SR(VarName);
     if (SR.startswith(NonVirtualThunkPrefixDemang)) {
@@ -96,11 +104,11 @@ std::string guessNameFromThunk(std::string VarName) {
 }
 
 Function* getThunkFunction(Function *vtableFunction) {
-    //if the instruction before return is a call, it is a non trivial thunk,
+    //if the instruction before return is a call, it is a non-trivial thunk,
     //the actual virtual function is the one before
     if (vtableFunction->back().back().getPrevNonDebugInstruction()) {
         assert(isa<ReturnInst>(vtableFunction->back().back()));
-        //Dont think invoke can be generated here ?
+        //Don't think invoke can be generated here ?
         assert(isa<CallInst>(vtableFunction->back().back().getPrevNonDebugInstruction()));
         assert(cast<ReturnInst>(vtableFunction->back().back()).getNumOperands() == 1);
         cast<ReturnInst>(vtableFunction->back().back()).getOperand((unsigned int) 0)->dump();
@@ -116,13 +124,10 @@ Function* getThunkFunction(Function *vtableFunction) {
 }
 
 Vtable toVtable(const GlobalVariable &Global) {
-    //wie generiert  clang code insbesondere mit function pointer
-    //nur selbst analysieren wenns nicht wirklich viel ist
-    //evtl vorhandene optionen nutzen?
-
     Vtable ret = {};
     assert(Global.getType()->isPointerTy());
     assert(Global.getNumOperands() == 1);
+    assert(isa<ConstantStruct>(Global.getOperand(0)));
     auto *vtableStruct = cast<ConstantStruct>(Global.getOperand(0));
     for (unsigned int i = 0, e = vtableStruct->getNumOperands(); i < e; i++) {
         assert(vtableStruct->getAggregateElement(i)->getType()->isArrayTy());
@@ -163,38 +168,42 @@ Vtable toVtable(const GlobalVariable &Global) {
     return ret;
 }
 
-StructType* getFunctionOriginStruct(Function &f) {
-    if (auto functionType = f.getFunctionType()) {
-        if (auto paramType = dyn_cast<PointerType>(functionType->getParamType(0))) {
-            return paramType->getElementType()->isStructTy() ? cast<StructType>(paramType->getElementType())
-                                                             : nullptr;
-        }
-    }
-    return nullptr;
-}
-
 void linkTypeHierarchyMap(RecordMap &map, Module& M) {
     for(auto& g : M.getGlobalList()){
         if(g.hasName() && isVTable(g.getName().str())){
-            auto gName= removeVTablePrefix(demangle(g.getName().str()));
+            auto vtableName= removeVTablePrefix(demangle(g.getName().str()));
+            if (!g.hasMetadata()){
+                assert(g.getName().contains("cxxabi") && "during lto no external vtables other than cxx abi should exist");
+                continue;
+            }
             SmallVector<std::pair<unsigned, MDNode *>> MD;
             g.getAllMetadata(MD);
             for(auto MDPair : MD){
                 assert(MDPair.second->getNumOperands()==2);
-                assert(isa<MDString>(MDPair.second->getOperand(1)));
+                if(!isa<MDString>(MDPair.second->getOperand(1))){
+                    outs()<<"Found a vtable metadatum that is not a string\n";
+                    g.dump();
+                    MDPair.second->dump();
+                    continue;
+                }
+
                 llvm::StringRef metaDataStringRef=cast<MDString>(MDPair.second->getOperand(1))->getString();;
                 if(metaDataStringRef.endswith(".virtual")){
+                    //still have not figured out what those are for
                     continue;
                 } else{
                     auto demangledTypeInfo = demangle(metaDataStringRef.str());
                     llvm::StringRef demangledTypeInfoRef(demangledTypeInfo);
                     assert( demangledTypeInfoRef.startswith(TypeInfoNamePrefixDemang));
                     auto parentName=demangledTypeInfoRef.drop_front(TypeInfoNamePrefixDemang.size()).str();
-                    if(map.count(parentName)==0 || map.count(gName)==0){
-                      outs()<<"parentName: "<<parentName<<" count: "<<map.count(parentName) << "child: "<<map.count(gName)<<"\n";
+                    if(map.count(parentName)==0 || map.count(vtableName) == 0){
+                      outs() << "parentName: " << parentName << " count: " << map.count(parentName) << " child: " << map.count(vtableName) << "\n";
                       continue;
                     }
-                    map.at(parentName)->parents.insert(map.at(gName));
+                    //This registers a class to be part of its own call set,
+                    //if this is not necessary filter with:
+                    //if (parentName==vtableName) continue;
+                    map.at(parentName)->callSet.insert(map.at(vtableName));
                 }
             }
         }
@@ -212,13 +221,14 @@ RecordMap work(Module &M) {
                 //Todo: do something with type info, haven't yet figured out what
             }
             //todo: test if internal is the right exclusion criterion
-            if (isVTable(Global.getName().str()) && Global.hasInternalLinkage()) {
-                //assert(Global.hasMetadata());
+            if (Global.hasInternalLinkage() && isVTable(Global.getName().str()) ) {
+                assert(Global.hasMetadata());
                 //SmallVector<std::pair<unsigned int, MDNode *>> b;
                 //Global.getAllMetadata(b);
                 auto Demang = demangle(Global.getName().str());
                 auto ClearName = removeVTablePrefix(Demang);
                 auto functionFromVtable = toVtable(Global);
+
                 RecordInformation t = {ClearName, functionFromVtable, {}};
                 ret[t.name] = std::make_shared<RecordInformation>(t);
             }
@@ -227,6 +237,7 @@ RecordMap work(Module &M) {
             Global.dump();
         }
     }
+
     linkTypeHierarchyMap(ret, M);
 
     return ret;

@@ -32,8 +32,10 @@ namespace CallGraphGeneration {
 
     void passToRuntimeComponent(Module &M, Value *Arg);
 
-    CgMultiNodePtr createMultiNode(RecordAnalysis::RecordMap map, const std::basic_string<char>& string, long i);
-
+    std::vector<CgNodePtr> createMultiNode(RecordAnalysis::RecordMap map, const std::basic_string<char>& string, long i);
+    void handlePointerCallFromLoad(metacg::CgNode *sourceNode, metacg::Callgraph *cg, const CallBase *callBase,
+                                   const LoadInst *loadInst,
+                                   const RecordAnalysis::RecordMap &recordMap);
     metacg::MCGFileInfo genCCInfo(StringRef ModuleName);
     metacg::graph::MCGManager& llvmCallGraphToMetaCG(CallGraphAnalysis::Result &llvmCG, const RecordAnalysis::RecordMap& rm);
 
@@ -44,6 +46,7 @@ namespace CallGraphGeneration {
             if (!work(M, &MA))
                 return PreservedAnalyses::all();
             return PreservedAnalyses::none();
+
         }
     };
 

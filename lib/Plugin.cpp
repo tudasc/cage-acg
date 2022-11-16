@@ -49,7 +49,7 @@ llvm::PassPluginLibraryInfo getPluginInfo() {
                             }
                             return false;
                         });
-                // #1 REGISTRATION FOR "opt -passes=print<type-hierarchy>"
+                // #1 REGISTRATION FOR "opt -passes=print<record-hierarchy>"
                 PB.registerPipelineParsingCallback(
                         [&](StringRef Name, ModulePassManager &MPM,
                             ArrayRef<PassBuilder::PipelineElement>) {
@@ -71,6 +71,11 @@ llvm::PassPluginLibraryInfo getPluginInfo() {
 #ifndef LLVM_GENCC_LINK_INTO_TOOLS
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
+#if !NDEBUG
+    outs()<<"gencc Debug Info  \n";
+#else
+    outs()<<"gencc Release Info  \n";
+#endif
     return getPluginInfo();
 }
 #endif

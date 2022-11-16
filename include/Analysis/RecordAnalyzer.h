@@ -26,7 +26,7 @@ namespace RecordAnalysis {
     struct RecordInformation {
         std::string name;
         Vtable vtable;
-        std::unordered_set<std::shared_ptr<RecordInformation>> parents;
+        std::unordered_set<std::shared_ptr<RecordInformation>> callSet;
     };
 
     using RecordMap = std::unordered_map<std::string, std::shared_ptr<RecordInformation>>;
@@ -55,6 +55,8 @@ namespace RecordAnalysis {
     std::string removeVTablePrefix(std::string VarName);
 
     std::string removeStructPrefix(std::string VarName);
+
+    std::string removeClassPrefix(std::string VarName);
 
     std::string removeThunkPrefix(std::string VarName);
 
