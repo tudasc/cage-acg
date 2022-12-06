@@ -2,15 +2,16 @@
 
 O3_passes='annotation2metadata,cross-dso-cfi,globaldce,forceattrs,inferattrs,callsite-splitting,pgo-icall-prom,ipsccp,called-value-propagation,function-attrs,rpo-function-attrs,globalsplit,wholeprogramdevirt,globalopt,mem2reg,constmerge,deadargelim,aggressive-instcombine,instcombine,inliner-wrapper,globalopt,globaldce,argpromotion,instcombine,jump-threading,sroa,tailcallelim,function-attrs,require<globals-aa>,function(invalidate<aa>),loop-simplify,lcssa,gvn,memcpyopt,dse,mldst-motion,loop-simplify,lcssa,loop-distribute,loop-vectorize,loop-unroll,transform-warning,instcombine,simplifycfg,sccp,instcombine,bdce,slp-vectorizer,vector-combine,alignment-from-assumptions,instcombine,jump-threading,lowertypetests,lowertypetests,simplifycfg,elim-avail-extern,globaldce,annotation-remarks'
 O3_with_genCC_passes=$O3_passes",genCC"
-libgenCC=/media/tim/Volume/Studium/Master/Semester3/MasterArbeit/Code/gencc/cmake-build-debug/lib/libplugin.so
-runtimeComponent=/media/tim/Volume/Studium/Master/Semester3/MasterArbeit/Code/gencc/cmake-build-debug/lib/Runtime/libgenCCRT.so
+libgenCC=@libgenCC@
+runtimeComponent=@runtimeComponent@
 runtimeComponent_path=$(dirname "${runtimeComponent}")
+pluginCapableLLD=@pluginCapableLLD@
 
 echoerr() { echo "$@" 1>&2; }
 
 function get_clang(){
-  readonly clang_pp=clang++-13
-  readonly clang=clang-13
+  readonly clang_pp=$(realpath $(which clang++))
+  readonly clang=$(realpath $(which clang))
 }
 
 function is_cpp() {
@@ -27,7 +28,7 @@ function is_cpp() {
 function get_first_compile(){
   local counter=0
   for line in $@; do
-    if [[ $line == " \"/usr/lib/llvm"*   ]]; then
+    if [[ $line ==  " \"$clang"* ]]; then
       return $counter
     fi
      counter=$(($counter+1))
@@ -125,7 +126,7 @@ function main_in(){
   for single_link in ${clang_link_invoke[@]}; do
     IFS=' '
     split_link=($single_link)
-    split_link[0]=/media/tim/Volume/Studium/Master/Semester3/MasterArbeit/LLVMRepo/llvm-project/lld/cmake-build-debug/bin/ld.lld
+    split_link[0]=$pluginCapableLLD
     split_link+=("-L${runtimeComponent_path} -rpath ${runtimeComponent_path} -lgenCCRT --lto-load-pass-plugin=$libgenCC --lto-newpm-passes='$O3_with_genCC_passes'")
     #"-L${runtimeComponent_path} -lgenCCRT --lto-load-pass-plugin=$libgenCC --lto-newpm-passes=$O3_with_genCC_passes "
     if [[ $echo_only -eq 1 ]]; then

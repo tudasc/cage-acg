@@ -39,5 +39,13 @@ add_subdirectory(test)
 
 get_property(GENCC_PLUGIN_DIR TARGET plugin PROPERTY PROBABLE_PATH)
 get_property(GENCC_RUNTIME_DIR TARGET genCCRT PROPERTY PROBABLE_PATH)
+get_property(libgenCC TARGET plugin PROPERTY PROBABLE_PATH)
+get_property(runtimeComponent TARGET genCCRT PROPERTY PROBABLE_PATH)
 
-configure_file( ${CMAKE_SOURCE_DIR}/util/gencc_wrapper.sh  ${CMAKE_SOURCE_DIR}/util/gencc_wrapper_config.sh @ONLY)
+
+configure_file( ${CMAKE_SOURCE_DIR}/util/c_pp_wrapper_no_opt.sh  ${CMAKE_SOURCE_DIR}/util/c_pp_wrapper_no_opt_config.sh @ONLY)
+configure_file( ${CMAKE_SOURCE_DIR}/util/c_pp_wrapper_all_opt.sh  ${CMAKE_SOURCE_DIR}/util/c_pp_wrapper_all_opt_config.sh @ONLY)
+configure_file( ${CMAKE_SOURCE_DIR}/util/c_pp_wrapper_only_gencc.sh  ${CMAKE_SOURCE_DIR}/util/c_pp_wrapper_only_gencc_config.sh @ONLY)
+configure_file( ${CMAKE_SOURCE_DIR}/util/c_wrapper_no_opt.sh  ${CMAKE_SOURCE_DIR}/util/c_wrapper_no_opt_config.sh @ONLY)
+configure_file( ${CMAKE_SOURCE_DIR}/util/c_wrapper_all_opt.sh  ${CMAKE_SOURCE_DIR}/util/c_wrapper_all_opt_config.sh @ONLY)
+configure_file( ${CMAKE_SOURCE_DIR}/util/c_wrapper_only_gencc.sh  ${CMAKE_SOURCE_DIR}/util/c_wrapper_only_gencc_config.sh @ONLY)
