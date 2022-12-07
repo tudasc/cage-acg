@@ -78,6 +78,4 @@
     void to_json(nlohmann::json &j, const GenCCVtableMetadata &md);
 
 
-#endif
-
 #endif //CALLGRAPHGENERATION_VTABLEMETADATA_H

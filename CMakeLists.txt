@@ -9,25 +9,25 @@ include_directories(${LLVM_INCLUDE_DIRS})
 
 if(NOT DEFINED metaCGDir)
   message(WARNING "MetaCG directory was not found"
-          "Use -DmetaCGDir=<PATH> to set path")
+          "Use -DmetaCGDir=<PATH> to set the path to the build directory")
   #find_package(MetaCG REQUIRED CONFIG)
 endif ()
 
 if(NOT DEFINED pluginCapableLLD)
   message(WARNING "No plugin capable LLD linker was found"
-          "Use -DpluginCapableLLD=<PATH> to set path")
+          "Use -DpluginCapableLLD=<PATH>/<BINARY> to set path to the LLD binary")
 endif()
 
 
-set(libmetacg ${metaCGDir}/build/graph/libmetacg.so)
-set(libspdlog ${metaCGDir}/build/spdlog-build/libspdlogd.so)
-include_directories(${metaCGDir}/extern/json/include/)
+set(libmetacg ${metaCGDir}/graph/libmetacg.so)
+set(libspdlog ${metaCGDir}_deps/spdlog-build/libspdlogd.so)
+include_directories(${metaCGDir})
+include_directories(${metaCGDir}/_deps/json-src/include)
 include_directories(${metaCGDir}/pgis/lib/include/)
 include_directories(${metaCGDir}/extern/src/extrap/extrap-3.0/include/)
-include_directories(${metaCGDir}/build/)
 
 #Builds and compiles without this, but who knows if it breaks anything if we remove this
-#include_directories(${metaCGDir}/spdlog-src/include/)
+#include_directories(${metaCGDir}/_deps/spdlog-src/include/)
 
 include_directories(${metaCGDir}/graph/include/)
 
