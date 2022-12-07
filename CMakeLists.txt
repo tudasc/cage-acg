@@ -27,9 +27,9 @@ include_directories(${metaCGDir}/pgis/lib/include/)
 include_directories(${metaCGDir}/extern/src/extrap/extrap-3.0/include/)
 
 #Builds and compiles without this, but who knows if it breaks anything if we remove this
-#include_directories(${metaCGDir}/_deps/spdlog-src/include/)
+include_directories(${metaCGDir}/_deps/spdlog-src/include/)
 
-include_directories(${metaCGDir}/graph/include/)
+include_directories(${metaCGDir}/../graph/include/)
 
 include_directories(include)
 add_subdirectory(lib)
