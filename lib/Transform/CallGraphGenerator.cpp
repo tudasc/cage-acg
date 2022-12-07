@@ -185,7 +185,7 @@ namespace CallGraphGeneration {
 
         auto functionPointer = loadInst->getPointerOperand();
         if (isa<GetElementPtrInst>(functionPointer)) {
-            outs()<<"The pointer operand was calculated via a GEP, Vtable contains more than one function\n";
+            outs() << "The pointer operand was calculated via a GEP, Vtable contains more than one function\n";
 
             auto gep = cast<GetElementPtrInst>(functionPointer);
 
@@ -201,35 +201,37 @@ namespace CallGraphGeneration {
                     .getSExtValue();
             //outs() << "Creating MN\n";
             {//Remove possible numerical suffixes, which appear when running with opt instead of lld
-            int count=0;
-            for(auto byte=std::prev(llvm::StringRef(indexedStructName).bytes().end());(*byte=='.' || (*byte>='0' && *byte<='9')) && byte!=llvm::StringRef(indexedStructName).bytes_begin();byte--,count++){ }
-            indexedStructName=llvm::StringRef(indexedStructName).drop_back(count);
+                int count = 0;
+                for (auto byte = std::prev(llvm::StringRef(indexedStructName).bytes().end());
+                     (*byte == '.' || (*byte >= '0' && *byte <= '9')) &&
+                     byte != llvm::StringRef(indexedStructName).bytes_begin(); byte--, count++) {}
+                indexedStructName = llvm::StringRef(indexedStructName).drop_back(count);
             }
 
-            outs() << "Struct: " << indexedStructName << " will call the: " << vtableIndex << "th function of " << recordMap.at(indexedStructName)->callSet.size()<< " different vtables \n";
+            outs() << "Struct: " << indexedStructName << " will call the: " << vtableIndex << "th function of "
+                   << recordMap.at(indexedStructName)->callSet.size() << " different vtables \n";
 
             CgNodeRawPtrUSet callSet;
-            for (const auto& elem : recordMap.at(indexedStructName)->callSet){
-                outs()<<elem->name<<"::"<< elem->vtable.functions.at(vtableIndex)->getName() <<"\n";
-                auto targetNode=cg->getNode(elem->vtable.functions.at(vtableIndex)->getName().str());
+            for (const auto &elem: recordMap.at(indexedStructName)->callSet) {
+                outs() << elem->name << "::" << elem->vtable.functions.at(vtableIndex)->getName() << "\n";
+                auto targetNode = cg->getOrInsertNode(elem->vtable.functions.at(vtableIndex)->getName().str());
                 callSet.insert(targetNode);
                 cg->addEdge(sourceNode->getId(), targetNode->getId());
-
             }
             sourceNode->getOrCreateMD<GenCCVtableMetadata>()->addToCallSet(callSet);
 
-        }
-        else {
+        } else {
 
             outs() << "Vtable contains only one function we load index 0\n";
             outs() << "Creating Trivial MN\n";
 
-            outs() << "Struct: " << indexedStructName << " will call the: " << 0 << "th function of " << recordMap.at(indexedStructName)->callSet.size()<< " different vtables \n";
+            outs() << "Struct: " << indexedStructName << " will call the: " << 0 << "th function of "
+                   << recordMap.at(indexedStructName)->callSet.size() << " different vtables \n";
 
             CgNodeRawPtrUSet callSet;
-            for (const auto& elem : recordMap.at(indexedStructName)->callSet){
-                outs()<<elem->name<<"::"<< elem->vtable.functions.at(0)->getName() <<"\n";
-                auto targetNode=cg->getNode(elem->vtable.functions.at(0)->getName().str());
+            for (const auto &elem: recordMap.at(indexedStructName)->callSet) {
+                outs() << elem->name << "::" << elem->vtable.functions.at(0)->getName() << "\n";
+                auto targetNode = cg->getNode(elem->vtable.functions.at(0)->getName().str());
                 callSet.insert(targetNode);
                 cg->addEdge(sourceNode->getId(), targetNode->getId());
 
