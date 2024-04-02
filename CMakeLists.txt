@@ -5,31 +5,12 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM/Clang version " ${LLVM_VERSION})
 
+
 include_directories(${LLVM_INCLUDE_DIRS})
 
-if(NOT DEFINED metaCGDir)
-  message(WARNING "MetaCG directory was not found"
-          "Use -DmetaCGDir=<PATH> to set the path to the build directory")
-  #find_package(MetaCG REQUIRED CONFIG)
-endif ()
 
-if(NOT DEFINED pluginCapableLLD)
-  message(WARNING "No plugin capable LLD linker was found"
-          "Use -DpluginCapableLLD=<PATH>/<BINARY> to set path to the LLD binary")
-endif()
-
-
-set(libmetacg ${metaCGDir}/graph/libmetacg.so)
-set(libspdlog ${metaCGDir}_deps/spdlog-build/libspdlogd.so)
-include_directories(${metaCGDir})
-include_directories(${metaCGDir}/_deps/json-src/include)
-include_directories(${metaCGDir}/pgis/lib/include/)
-include_directories(${metaCGDir}/extern/src/extrap/extrap-3.0/include/)
-
-#Builds and compiles without this, but who knows if it breaks anything if we remove this
-include_directories(${metaCGDir}/_deps/spdlog-src/include/)
-
-include_directories(${metaCGDir}/../graph/include/)
+find_package(metacg REQUIRED)
+find_package(spdlog REQUIRED)
 
 include_directories(include)
 add_subdirectory(lib)
@@ -37,9 +18,9 @@ add_subdirectory(lib)
 #configure tests last
 add_subdirectory(test)
 
-get_property(GENCC_PLUGIN_DIR TARGET plugin PROPERTY PROBABLE_PATH)
+get_property(GENCC_PLUGIN_DIR TARGET cage PROPERTY PROBABLE_PATH)
 get_property(GENCC_RUNTIME_DIR TARGET genCCRT PROPERTY PROBABLE_PATH)
-get_property(libgenCC TARGET plugin PROPERTY PROBABLE_PATH)
+get_property(libgenCC TARGET cage PROPERTY PROBABLE_PATH)
 get_property(runtimeComponent TARGET genCCRT PROPERTY PROBABLE_PATH)
 
 

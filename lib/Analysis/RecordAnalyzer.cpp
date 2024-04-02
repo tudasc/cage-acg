@@ -28,26 +28,26 @@ void printRecordAnalyzerResults(raw_ostream &OutS, const RecordMap &recordMap) {
 
 bool isTypeInfo(const std::string &VarName) {
     auto Demang = demangle(VarName);
-    return llvm::StringRef(Demang).startswith(TypeInfoPrefixDemang);
+    return llvm::StringRef(Demang).starts_with(TypeInfoPrefixDemang);
 }
 
 bool isVTable(const std::string &VarName) {
     auto Demang = demangle(VarName);
-    return llvm::StringRef(Demang).startswith(VTablePrefixDemang);
+    return llvm::StringRef(Demang).starts_with(VTablePrefixDemang);
 }
 
 bool isThunk(const std::string &VarName) {
     auto Demang = demangle(VarName);
-    return llvm::StringRef(Demang).startswith(NonVirtualThunkPrefixDemang) ||
-           llvm::StringRef(Demang).startswith(VirtualThunkPrefixDemang);
+    return llvm::StringRef(Demang).starts_with(NonVirtualThunkPrefixDemang) ||
+           llvm::StringRef(Demang).starts_with(VirtualThunkPrefixDemang);
 }
 
 std::string removeTypeInfoPrefix(std::string VarName) {
     llvm::StringRef SR(VarName);
-    if (SR.startswith(TypeInfoPrefixDemang)) {
+    if (SR.starts_with(TypeInfoPrefixDemang)) {
         return SR.drop_front(TypeInfoPrefixDemang.size()).str();
     }
-    if (SR.startswith(TypeInfoPrefix)) {
+    if (SR.starts_with(TypeInfoPrefix)) {
         return SR.drop_front(TypeInfoPrefix.size()).str();
     }
     return VarName;
@@ -55,10 +55,10 @@ std::string removeTypeInfoPrefix(std::string VarName) {
 
 std::string removeVTablePrefix(std::string VarName) {
     llvm::StringRef SR(VarName);
-    if (SR.startswith(VTablePrefixDemang)) {
+    if (SR.starts_with(VTablePrefixDemang)) {
         return SR.drop_front(VTablePrefixDemang.size()).str();
     }
-    if (SR.startswith(VTablePrefix)) {
+    if (SR.starts_with(VTablePrefix)) {
         return SR.drop_front(VTablePrefix.size()).str();
     }
     return VarName;
@@ -66,7 +66,7 @@ std::string removeVTablePrefix(std::string VarName) {
 
 std::string removeStructPrefix(std::string VarName) {
     llvm::StringRef SR(VarName);
-    if (SR.startswith(StructPrefix)) {
+    if (SR.starts_with(StructPrefix)) {
         return SR.drop_front(StructPrefix.size()).str();
     }
     return VarName;
@@ -74,7 +74,7 @@ std::string removeStructPrefix(std::string VarName) {
 
 std::string removeClassPrefix(std::string VarName) {
         llvm::StringRef SR(VarName);
-        if (SR.startswith(ClassPrefix)) {
+        if (SR.starts_with(ClassPrefix)) {
             return SR.drop_front(ClassPrefix.size()).str();
         }
         return VarName;
@@ -82,13 +82,13 @@ std::string removeClassPrefix(std::string VarName) {
 
 std::string removeThunkPrefix(std::string VarName) {
     llvm::StringRef SR(VarName);
-    if (SR.startswith(NonVirtualThunkPrefixDemang)) {
+    if (SR.starts_with(NonVirtualThunkPrefixDemang)) {
         return SR.drop_front(NonVirtualThunkPrefixDemang.size()).str();
     }
-    if (SR.startswith(VirtualThunkPrefixDemang)) {
+    if (SR.starts_with(VirtualThunkPrefixDemang)) {
         return SR.drop_front(VirtualThunkPrefixDemang.size()).str();
     }
-    if (SR.startswith(NonVirtualThunkPrefix)) {
+    if (SR.starts_with(NonVirtualThunkPrefix)) {
         return SR.drop_front(NonVirtualThunkPrefix.size()).str();
     }
     return VarName;
@@ -169,7 +169,7 @@ Vtable toVtable(const GlobalVariable &Global) {
 }
 
 void linkTypeHierarchyMap(RecordMap &map, Module& M) {
-    for(auto& g : M.getGlobalList()){
+    for(auto& g : M.globals()){
         if(g.hasName() && isVTable(g.getName().str())){
             auto vtableName= removeVTablePrefix(demangle(g.getName().str()));
             if (!g.hasMetadata()){
@@ -188,13 +188,13 @@ void linkTypeHierarchyMap(RecordMap &map, Module& M) {
                 }
 
                 llvm::StringRef metaDataStringRef=cast<MDString>(MDPair.second->getOperand(1))->getString();;
-                if(metaDataStringRef.endswith(".virtual")){
+                if(metaDataStringRef.ends_with(".virtual")){
                     //still have not figured out what those are for
                     continue;
                 } else{
                     auto demangledTypeInfo = demangle(metaDataStringRef.str());
                     llvm::StringRef demangledTypeInfoRef(demangledTypeInfo);
-                    assert( demangledTypeInfoRef.startswith(TypeInfoNamePrefixDemang));
+                    assert( demangledTypeInfoRef.starts_with(TypeInfoNamePrefixDemang));
                     auto parentName=demangledTypeInfoRef.drop_front(TypeInfoNamePrefixDemang.size()).str();
                     if(map.count(parentName)==0 || map.count(vtableName) == 0){
                       outs() << "parentName: " << parentName << " count: " << map.count(parentName) << " child: " << map.count(vtableName) << "\n";

@@ -9,6 +9,7 @@
 #include "llvm/Passes/PassPlugin.h"
 #include <llvm/Demangle/Demangle.h>
 #include <llvm/Support/Debug.h>
+#include <unordered_set>
 
 using namespace llvm;
 

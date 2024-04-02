@@ -1,0 +1,1 @@
+/usr/bin/g++ -fPIC -g -shared  -o libplugin.so CMakeFiles/plugin.dir/Plugin.cpp.o CMakeFiles/plugin.dir/MetaCGMetadata/VTableMetadata.cpp.o CMakeFiles/plugin.dir/Analysis/RecordAnalyzer.cpp.o CMakeFiles/plugin.dir/Transform/CallGraphGenerator.cpp.o  /home/th27wyci/.moduletree/packages/.gcc/8.5/metacg/0.10.0/lib64/libmetacg.so.0.6.0 

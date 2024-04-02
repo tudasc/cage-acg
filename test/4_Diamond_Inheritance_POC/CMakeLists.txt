@@ -1,4 +1,4 @@
-get_property(libgenCC_path TARGET plugin PROPERTY PROBABLE_PATH)
+get_property(libgenCC_path TARGET cage PROPERTY PROBABLE_PATH)
 get_property(runtimeComponent TARGET genCCRT PROPERTY PROBABLE_PATH)
 
 FILE(GLOB SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/  *.cpp)

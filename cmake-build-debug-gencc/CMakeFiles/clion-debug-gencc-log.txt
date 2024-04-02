@@ -1,0 +1,5 @@
+/usr/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" -S /home/th27wyci/gencc -B /home/th27wyci/gencc/cmake-build-debug-gencc
+-- Found LLVM/Clang version 18.1.1
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/th27wyci/gencc/cmake-build-debug-gencc

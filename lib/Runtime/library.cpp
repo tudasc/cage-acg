@@ -1,7 +1,7 @@
 #include "Runtime/library.h"
 
-#include "MCGReader.h"
-#include "MCGWriter.h"
+#include "io/MCGWriter.h"
+#include "io/MCGReader.h"
 
 #include <iostream>
 #include <MCGBaseInfo.h>

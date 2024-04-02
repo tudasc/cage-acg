@@ -1,1 +1,1 @@
-target_sources(plugin PUBLIC RecordAnalyzer.cpp)
+target_sources(cage PUBLIC RecordAnalyzer.cpp)

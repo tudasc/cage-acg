@@ -1,2 +1,2 @@
-target_sources(plugin PUBLIC CallGraphGenerator.cpp)
-target_link_libraries(plugin ${libmetacg} ${libspdlog})
+target_sources(cage PUBLIC CallGraphGenerator.cpp)
+target_link_libraries(cage ${libmetacg} ${libspdlog})

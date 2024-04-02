@@ -1,6 +1,7 @@
 #include <Transform/CallGraphGenerator.h>
 //#include <MetaDataHandler.h>
 #include "MetaCGMetadata/VTableMetadata.h"
+#include "io/VersionThreeMCGWriter.h"
 
 using namespace llvm;
 
@@ -8,14 +9,14 @@ using namespace llvm;
 //                                  cl::desc("generates call-graph component"));
 
 namespace CallGraphGeneration {
-
+#if false
     void generateLibraryFunction(Module &M) {
         assert(M.getFunction("getGCC") == nullptr &&
                "could not add getGCC runtime component call");
 
         FunctionType *getCallGraphFT =
                 FunctionType::get(Type::getVoidTy(M.getContext()),
-                                  {Type::getInt8PtrTy(M.getContext())}, false);
+                                  {Type::getInt8Ty(M.getContext())->getPointerTo()}, false);
 
         M.getOrInsertFunction("getGCC", getCallGraphFT);
     }
@@ -32,26 +33,26 @@ namespace CallGraphGeneration {
                 FunctionType::get(Type::getVoidTy(M.getContext()), {}, false);
 
         M.getOrInsertFunction(functionName, InitFT);
-        auto &InitFunctionBBList = M.getFunction(functionName)->getBasicBlockList();
-        InitFunctionBBList.insert(InitFunctionBBList.begin(),
-                                  BasicBlock::Create(M.getContext()));
-        InitFunctionBBList.front().getInstList().insert(
-                InitFunctionBBList.front().getInstList().begin(),
-                ReturnInst::Create(M.getContext()));
+        //auto &InitFunctionBBList = M.getFunction(functionName)->getBasicBlockList();
+        //InitFunctionBBList.insert(InitFunctionBBList.begin(),BasicBlock::Create(M.getContext()));
+        //BasicBlock::Create(M.getContext(),"",M.getFunction("genCCInit"));
+        //InitFunctionBBList.front().getInstList().insert(InitFunctionBBList.front().getInstList().begin(),ReturnInst::Create(M.getContext()));
+        ReturnInst::Create(M.getContext(), nullptr,BasicBlock::Create(M.getContext(),"",M.getFunction("genCCInit")));
         appendToGlobalCtors(M, M.getFunction(functionName), 101);
     }
 
     void passToRuntimeComponent(Module &M, Value *Arg, size_t id) {
-        std::string functionName =
-                std::string("genCCInit").append(std::to_string(id));
-        auto &FIlist = M.getFunction(functionName)->front().getInstList();
-        auto bitCast = BitCastInst::CreateBitOrPointerCast(
-                Arg, Type::getInt8PtrTy(M.getContext()));
-        FIlist.insert((--FIlist.end()), bitCast);
-        FIlist.insert((--FIlist.end()),
-                      CallInst::Create(M.getFunction("getGCC"), bitCast));
+        M.dump();
+        std::string functionName =std::string("genCCInit").append(std::to_string(id));
+        //auto &FIlist = M.getFunction(functionName)->front().getInstList();
+        auto bitCast = BitCastInst::CreateBitOrPointerCast(Arg, Type::getInt8Ty(M.getContext())->getPointerTo());
+        //FIlist.insert((--FIlist.end()), bitCast);
+        bitCast->insertBefore(M.getFunction(functionName)->back().end());
+        //FIlist.insert((--FIlist.end()),CallInst::Create(M.getFunction("getGCC"), bitCast));
+        auto callInst = CallInst::Create(M.getFunction("getGCC"),{bitCast});
+        callInst->insertBefore(M.getFunction(functionName)->back().end());
     }
-
+#endif
 
     metacg::graph::MCGManager &
     llvmCallGraphToMetaCG(CallGraphAnalysis::Result &llvmCG,
@@ -59,7 +60,7 @@ namespace CallGraphGeneration {
         metacg::graph::MCGManager &mcgManager = metacg::graph::MCGManager::get();
         assert(mcgManager.graphs_size() == 0);
         mcgManager.addToManagedGraphs("graph", std::make_unique<metacg::Callgraph>());
-        mcgManager.addMetaHandler<GenCCVtableMetadatahandler>();
+        //mcgManager.addMetaHandler<GenCCVtableMetadatahandler>();
         for (auto &llvmNode: llvmCG) {
             if (llvmNode.first == NULL) {
                 // This is LLVM's way of encoding Reachable Functions, we don't care
@@ -78,12 +79,12 @@ namespace CallGraphGeneration {
             n1->setHasBody(function.getInstructionCount() != 0);
 
             for (auto node: *llvmNode.second) {
-                if (!node.first.hasValue()) {
+                if (!node.first.has_value()) {
                     outs() << "Function:" << function.getName() << " calls external node\n";
                     continue;
                 }
 
-                auto callBase = cast<CallBase>(node.first.getValue());
+                auto callBase = cast<CallBase>(node.first.value());
                 auto *calledFunction = callBase->getCalledFunction();
 
                 if (calledFunction != nullptr) {
@@ -128,6 +129,7 @@ namespace CallGraphGeneration {
         return mcgManager;
     }
 
+#if false
     void handlePointerCallFromLoad(metacg::CgNode *sourceNode, metacg::Callgraph *cg, const CallBase *callBase,
                                    const LoadInst *loadInst,
                                    const RecordAnalysis::RecordMap &recordMap) {
@@ -164,14 +166,14 @@ namespace CallGraphGeneration {
                "Pointer to *this* must be struct/class");
         //outs()<<"We are Indexing into:";
         auto indexedStructName = std::string("");
-        if (functionType->getParamType(0)->getPointerElementType()->getStructName().startswith(
+        if (functionType->getParamType(0)->getPointerElementType()->getStructName().starts_with(
                 RecordAnalysis::StructPrefix)) {
             outs() << "Removing struct prefix\n";
             indexedStructName = RecordAnalysis::removeStructPrefix(functionType->getParamType(0)
                                                                            ->getPointerElementType()
                                                                            ->getStructName()
                                                                            .str());
-        } else if (functionType->getParamType(0)->getPointerElementType()->getStructName().startswith(
+        } else if (functionType->getParamType(0)->getPointerElementType()->getStructName().starts_with(
                 RecordAnalysis::ClassPrefix)) {
             outs() << "Removing class prefix\n";
             indexedStructName = RecordAnalysis::removeClassPrefix(functionType->getParamType(0)
@@ -239,15 +241,16 @@ namespace CallGraphGeneration {
             sourceNode->getOrCreateMD<GenCCVtableMetadata>()->addToCallSet(callSet);
         }
     }
+#endif
 
     bool work(Module &M, ModuleAnalysisManager *MA) {
-        generateLibraryFunction(M);
+        //generateLibraryFunction(M);
 
         size_t t = std::hash<std::string>()(getUniqueModuleId(&M));
 
         outs() << "T:" << getUniqueModuleId(&M) << ":" << t << "\n";
 
-        generateInitFunction(M, t);
+        //generateInitFunction(M, t);
         /** Use callgraph information provided by CGA Pass
          */
         auto &cgResult = MA->getResult<CallGraphAnalysis>(M);
@@ -269,7 +272,7 @@ namespace CallGraphGeneration {
         //  passing a parameter to name the control flow graph
         std::string s("GenCC");
         metacg::MCGGeneratorVersionInfo mcgVI = {s, 0, 1, "NO_GIT_SHA_AVAILABLE"};
-        metacg::io::MCGWriter mcgw(mcg, genCCInfo(M.getName()));
+        metacg::io::VersionThreeMCGWriter mcgw(mcg, genCCInfo(M.getName()));
 
         mcgw.write(jsSink);
         std::stringstream jsStream;
@@ -288,7 +291,7 @@ namespace CallGraphGeneration {
         global2->setLinkage(llvm::GlobalValue::InternalLinkage);
         global2->setAlignment(MaybeAlign(1));
         global2->setInitializer(insertableCallgraph);
-        passToRuntimeComponent(M, global2, t);
+        //passToRuntimeComponent(M, global2, t);
 
 
         outs() << "Finishing up \n";

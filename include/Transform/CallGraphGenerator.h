@@ -6,7 +6,7 @@
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
+//#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include <llvm/Transforms/IPO/WholeProgramDevirt.h>
 #include <llvm/Demangle/Demangle.h>
 #include <llvm/Transforms/Utils/ModuleUtils.h>
@@ -16,7 +16,7 @@
 #include "Callgraph.h"
 #include "MCGManager.h"
 #include "Analysis/RecordAnalyzer.h"
-#include "MCGWriter.h"
+#include "io/MCGWriter.h"
 
 
 using namespace llvm;

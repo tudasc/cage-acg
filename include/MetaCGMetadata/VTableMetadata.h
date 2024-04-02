@@ -14,7 +14,7 @@
 #include <Callgraph.h>
 #include <set>
 
-#include "MetaData.h"
+#include "metadata/MetaData.h"
 #include "nlohmann/json.hpp"
 
 
@@ -39,7 +39,7 @@
         std::vector<CgNodeRawPtrUSet> callingSet; //vector( {a::foo}, {a::foo, b::foo}, {a::foo,c::foo})
     };
 
-
+#ifdef false
     class  GenCCVtableMetadatahandler final:  public metacg::io::retriever::MetaDataHandler{
     public:
             /** Invoked to decide if meta data should be output into the json file for the node */
@@ -75,6 +75,7 @@
              ~GenCCVtableMetadatahandler() final = default;
 
         };
+#endif
     void to_json(nlohmann::json &j, const GenCCVtableMetadata &md);
 
 
