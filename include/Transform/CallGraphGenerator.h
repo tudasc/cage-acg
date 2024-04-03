@@ -21,8 +21,6 @@
 
 using namespace llvm;
 
-//static cl::opt<bool> enableGenCC("genCC", cl::init(false),
-//                                 cl::desc("generates call-graph component"));
 
 namespace CallGraphGeneration {
 
@@ -48,6 +46,11 @@ namespace CallGraphGeneration {
             return PreservedAnalyses::none();
 
         }
+
+        static StringRef name() {
+            return "genCC";
+        }
+
     };
 
     struct LegacyGenCC : public ModulePass {
