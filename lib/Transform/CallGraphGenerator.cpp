@@ -5,8 +5,7 @@
 
 using namespace llvm;
 
-// static cl::opt<bool> enableGenCC("genCC", cl::init(false),
-//                                  cl::desc("generates call-graph component"));
+//static cl::opt<bool> enableGenCC("genCC", cl::init(false),cl::desc("generates call-graph component"));
 
 namespace CallGraphGeneration {
 #if false
@@ -124,7 +123,7 @@ namespace CallGraphGeneration {
             // outs() << "Finished creating call Edges!\n";
         }
 
-        llvm::outs() << "Completed insertion of all nodes and edges\n";
+        //llvm::outs() << "Completed insertion of all nodes and edges\n";
 
         return mcgManager;
     }
@@ -248,7 +247,7 @@ namespace CallGraphGeneration {
 
         size_t t = std::hash<std::string>()(getUniqueModuleId(&M));
 
-        outs() << "T:" << getUniqueModuleId(&M) << ":" << t << "\n";
+        //outs() << "T:" << getUniqueModuleId(&M) << ":" << t << "\n";
 
         //generateInitFunction(M, t);
         /** Use callgraph information provided by CGA Pass
@@ -272,7 +271,7 @@ namespace CallGraphGeneration {
         //  passing a parameter to name the control flow graph
         std::string s("GenCC");
         metacg::MCGGeneratorVersionInfo mcgVI = {s, 0, 1, "NO_GIT_SHA_AVAILABLE"};
-        metacg::io::VersionThreeMCGWriter mcgw(mcg, genCCInfo(M.getName()));
+        metacg::io::VersionThreeMCGWriter mcgw(mcg, genCCInfo(M.getName()),true,true);
 
         mcgw.write(jsSink);
         std::stringstream jsStream;
@@ -294,9 +293,9 @@ namespace CallGraphGeneration {
         //passToRuntimeComponent(M, global2, t);
 
 
-        outs() << "Finishing up \n";
+        //outs() << "Finishing up \n";
         mcg.resetManager();
-        outs() << "Finished up\n";
+        //outs() << "Finished up\n";
         return false;
     }
 
