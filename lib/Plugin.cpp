@@ -10,6 +10,8 @@
 #include "Analysis/RecordAnalyzer.h"
 #include "Transform/CallGraphGenerator.h"
 
+//static cl::opt<bool> enableGenCC("genCC", cl::init(false), cl::desc("generates call-graph component"));
+
 /* Legacy PM Registration */
 char RecordAnalysis::LegacyRecordAnalyzer::ID;
 static RegisterPass<RecordAnalysis::LegacyRecordAnalyzer> recordAnalyzerRegistrar("legacy-record-analysis",
@@ -31,17 +33,20 @@ llvm::PassPluginLibraryInfo getPluginInfo() {
             [](PassBuilder &PB) {
                 //allow registration via optlevel (non-lto)
                 PB.registerOptimizerLastEPCallback([](ModulePassManager &PM, OptimizationLevel) {
+                    outs()<<"Adding pass without pipeline parsing callback\n";
                     PM.addPass(CallGraphGeneration::genCC());
                 });
 
                 //registering via optlevel during lto appears to still be broken
                 PB.registerFullLinkTimeOptimizationLastEPCallback([](ModulePassManager &PM, OptimizationLevel o) {
+                    outs()<<"Registering LTO Phase pass\n";
                     PM.addPass(CallGraphGeneration::genCC());
                 });
 
                 //allow registration via pipeline parser
                 PB.registerPipelineParsingCallback(
                         [](StringRef Name, ModulePassManager &PM, ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                            outs()<<"Got Pipeline parsing callback\n";
                             if (Name == "genCC") {
                                 PM.addPass(CallGraphGeneration::genCC());
                                 return true;
@@ -71,10 +76,10 @@ llvm::PassPluginLibraryInfo getPluginInfo() {
 #ifndef LLVM_GENCC_LINK_INTO_TOOLS
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
-#if !NDEBUG
-    outs() << "gencc Debug Info  \n";
-#else
+#if NDEBUG
     outs()<<"gencc Release Info  \n";
+#else
+    outs() << "gencc Debug Info  \n";
 #endif
     return getPluginInfo();
 }
