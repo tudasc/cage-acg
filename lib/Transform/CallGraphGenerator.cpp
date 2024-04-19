@@ -2,6 +2,7 @@
 //#include <MetaDataHandler.h>
 #include "MetaCGMetadata/VTableMetadata.h"
 #include "io/VersionThreeMCGWriter.h"
+#include <fstream>
 
 using namespace llvm;
 
@@ -277,19 +278,22 @@ namespace CallGraphGeneration {
         std::stringstream jsStream;
         jsSink.output(jsStream);
 
-        outs() << "Callgraph:\n";
-        outs() << jsSink.getJson().dump(2, ' ').c_str() << "\n";
-        outs() << "-----------------------------\n";
-        auto insertableCallgraph =
-                ConstantDataArray::getString(M.getContext(), jsStream.str(), true);
+        // outs() << "Callgraph:\n";
+        // outs() << jsSink.getJson().dump(2, ' ').c_str() << "\n";
+        // outs() << "-----------------------------\n";
+        std::ofstream out("callgraph.mcg");
+        out << jsSink.getJson().dump(2, ' ').c_str() << "\n";
+        out.close();
 
-        std::string globalName = std::string("CallGraph").append(std::to_string(t));
 
-        M.getOrInsertGlobal(globalName, insertableCallgraph->getType());
-        auto global2 = M.getNamedGlobal(globalName);
-        global2->setLinkage(llvm::GlobalValue::InternalLinkage);
-        global2->setAlignment(MaybeAlign(1));
-        global2->setInitializer(insertableCallgraph);
+        // auto insertableCallgraph =
+                // ConstantDataArray::getString(M.getContext(), jsStream.str(), true);
+        // std::string globalName = std::string("CallGraph").append(std::to_string(t));
+        // M.getOrInsertGlobal(globalName, insertableCallgraph->getType());
+        // auto global2 = M.getNamedGlobal(globalName);
+        // global2->setLinkage(llvm::GlobalValue::InternalLinkage);
+        // global2->setAlignment(MaybeAlign(1));
+        // global2->setInitializer(insertableCallgraph);
         //passToRuntimeComponent(M, global2, t);
 
 
