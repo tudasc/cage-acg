@@ -1,5 +1,5 @@
 #ignore build directories
-/cmake-build-debug
+/cmake-build-*
 /build*
 
 #ignore clion cache
