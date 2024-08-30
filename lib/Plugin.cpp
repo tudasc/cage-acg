@@ -3,71 +3,87 @@
 //
 
 #include "llvm/Passes/PassPlugin.h"
-#include "llvm/Support/CommandLine.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Passes/PassBuilder.h"
 
 #include "Analysis/RecordAnalyzer.h"
-#include "Transform/CallGraphGenerator.h"
+#include "Analysis/DVA.h"
 
-//static cl::opt<bool> enableGenCC("genCC", cl::init(false), cl::desc("generates call-graph component"));
+#include "Transform/CallgraphGenerator.h"
 
-/* Legacy PM Registration */
-char RecordAnalysis::LegacyRecordAnalyzer::ID;
-static RegisterPass<RecordAnalysis::LegacyRecordAnalyzer> recordAnalyzerRegistrar("legacy-record-analysis",
-                                                                                  "generates type hierarchy and vtable information (legacy)",
-                                                                                  true /* Only looks at CFG */,
-                                                                                  true /* Analysis Pass */);
-
-char CallGraphGeneration::LegacyGenCC::ID;
-static RegisterPass<CallGraphGeneration::LegacyGenCC> genCCRegistrar("legacy-genCC",
-                                                                     "generates Call Graph Components (legacy)",
-                                                                     false /* Only looks at CFG */,
-                                                                     false /* Analysis Pass */);
 
 /* New PM Registration */
 AnalysisKey RecordAnalysis::RecordAnalyzer::Key;
+AnalysisKey DevirtAnalysis::DevirtAnalyzer::Key;
 
 llvm::PassPluginLibraryInfo getPluginInfo() {
-    return {LLVM_PLUGIN_API_VERSION, "genCC", "0.1",
+    return {LLVM_PLUGIN_API_VERSION, "CaGe", "0.2",
             [](PassBuilder &PB) {
                 //allow registration via optlevel (non-lto)
                 PB.registerOptimizerLastEPCallback([](ModulePassManager &PM, OptimizationLevel) {
-                    outs()<<"Adding pass without pipeline parsing callback\n";
-                    PM.addPass(CallGraphGeneration::genCC());
+#ifndef NDEBUG
+                    outs() << "Registering CaGe to run in during opt\n";
+#endif
+                    PM.addPass(CallgraphGeneration::CaGe());
                 });
 
                 //registering via optlevel during lto appears to still be broken
                 PB.registerFullLinkTimeOptimizationLastEPCallback([](ModulePassManager &PM, OptimizationLevel o) {
-                    outs()<<"Registering LTO Phase pass\n";
-                    PM.addPass(CallGraphGeneration::genCC());
+#ifndef NDEBUG
+                    outs() << "Registering CaGe to run in during full-lto\n";
+#endif
+                    PM.addPass(CallgraphGeneration::CaGe());
                 });
 
                 //allow registration via pipeline parser
                 PB.registerPipelineParsingCallback(
-                        [](StringRef Name, ModulePassManager &PM, ArrayRef<llvm::PassBuilder::PipelineElement>) {
-                            outs()<<"Got Pipeline parsing callback\n";
-                            if (Name == "genCC") {
-                                PM.addPass(CallGraphGeneration::genCC());
+                        [](StringRef Name, ModulePassManager &MPM, ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                            if (Name == "CaGe") {
+#ifndef NDEBUG
+                                outs() << "Registering CaGe to run as pipeline described\n";
+#endif
+                                MPM.addPass(CallgraphGeneration::CaGe());
                                 return true;
+                            } else {
+#ifndef NDEBUG
+                                outs() << "Did not register CaGe\n";
+#endif
                             }
                             return false;
                         });
 
-                // #1 REGISTRATION FOR "opt -passes=print<record-hierarchy>"
+                // printer pass to allow for "opt -passes=print<record-analysis>"
                 PB.registerPipelineParsingCallback(
                         [&](StringRef Name, ModulePassManager &MPM,
                             ArrayRef<PassBuilder::PipelineElement>) {
                             if (Name == "print<record-analysis>") {
+                                outs() << "Registering Record Analysis Printer\n";
                                 MPM.addPass(RecordAnalysis::RecordAnalyzerPrinter(llvm::errs()));
                                 return true;
+                            } else {
+#ifndef NDEBUG
+                                outs() << "Did not register Record Analysis Printer\n";
+#endif
                             }
                             return false;
                         });
-                // #2 REGISTRATION FOR "MAM.getResult<RecordAnalyzer>(Module)"
+
+                // register basic analysis pass for MAM.getResult<RecordAnalyzer>(Module)
                 PB.registerAnalysisRegistrationCallback(
                         [](ModuleAnalysisManager &MAM) {
+#ifndef NDEBUG
+                            outs() << "Registering Basic Record-Analyzer Pass\n";
+#endif
                             MAM.registerPass([&] { return RecordAnalysis::RecordAnalyzer(); });
+                        });
+
+                // register devirt analysis pass MAM.getResult<DevirtAnalyzer>(Module)
+                PB.registerAnalysisRegistrationCallback(
+                        [](ModuleAnalysisManager &MAM) {
+#ifndef NDEBUG
+                            outs()<<"Registering Devirtualization-Analyzer Pass\n";
+#endif
+                            MAM.registerPass([&] { return DevirtAnalysis::DevirtAnalyzer(); });
                         });
             }};
 }
@@ -76,10 +92,10 @@ llvm::PassPluginLibraryInfo getPluginInfo() {
 #ifndef LLVM_GENCC_LINK_INTO_TOOLS
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
-#if NDEBUG
-    outs()<<"gencc Release Info  \n";
+#ifndef NDEBUG
+    outs() << "Loading Debugversion of CaGe-Plugin\n";
 #else
-    outs() << "gencc Debug Info  \n";
+    outs()<<"Loading Releaseversion of CaGe-Plugin\n";
 #endif
     return getPluginInfo();
 }

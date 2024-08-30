@@ -4,27 +4,40 @@
 
 #include "Analysis/RecordAnalyzer.h"
 
+namespace RecordAnalysis {
+
+    bool isTypeInfo(const std::string &VarName);
+
+    bool isVTable(const std::string &VarName);
+
+    bool isThunk(const std::string &VarName);
+
+    std::string removeTypeInfoPrefix(std::string VarName);
+
+    std::string removeVTablePrefix(std::string VarName);
+
+    std::string removeStructPrefix(std::string VarName);
+
+    std::string removeClassPrefix(std::string VarName);
+
+    std::string removeThunkPrefix(std::string VarName);
+
+    std::string guessNameFromThunk(std::string VarName);
+
+    Function *getThunkFunction(Function *vtableFunction);
+
+    Vtable toVtable(const GlobalVariable &Global);
+
+    StructType *getFunctionOriginStruct(Function &f);
+
+    void linkTypeHierarchyMap(RecordMap &map, Module &M);
+}
+
 namespace RecordAnalysis{
 
 using RecordMap = std::unordered_map<std::string, std::shared_ptr<RecordInformation>>;
 
-void printRecordAnalyzerResults(raw_ostream &OutS, const RecordMap &recordMap) {
-    //todo: implement this
-    outs() << "There are: " << recordMap.size() << " vtables\n";
-    for (const auto &elem: recordMap) {
-        outs() << "VTable for: " << elem.first << " contains:\n";
-        for (auto elem2: elem.second->vtable.functions) {
-            outs() << demangle(elem2->getName().str()) << "\n";
-        }
-        outs() << "A Pointer of this type could call methods from:\n";
-        for (auto elem2: elem.second->callSet) {
-            outs() << elem2->name << "\n";
-        }
-    }
-    outs() << "--------------------------------\n";
 
-    //outs()<<"Printing the type recordMap analysis result is not yet implmeneted\n";
-}
 
 bool isTypeInfo(const std::string &VarName) {
     auto Demang = demangle(VarName);
@@ -141,6 +154,11 @@ Vtable toVtable(const GlobalVariable &Global) {
                 continue;
             }
 
+            if(!isa<ConstantExpr>(constant)){
+                constant->dump();
+                continue;
+            }
+
             assert(isa<ConstantExpr>(constant));
             auto expr = cast<ConstantExpr>(constant);
 
@@ -242,4 +260,7 @@ RecordMap work(Module &M) {
 
     return ret;
 }
+
+
+
 }

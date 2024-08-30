@@ -15,8 +15,20 @@ using namespace llvm;
 
 namespace RecordAnalysis {
 
+    const std::string StructPrefix = "struct.";
+    const std::string ClassPrefix = "class.";
+    const std::string VTablePrefix = "_ZTV";
+    const std::string VTablePrefixDemang = "vtable for ";
+    const std::string TypeInfoPrefix = "_ZTI";
+    const std::string TypeInfoPrefixDemang = "typeinfo for ";
+    const std::string TypeInfoNamePrefixDemang = "typeinfo name for ";
+    const std::string NonVirtualThunkPrefix = "_ZThn";
+    const std::string NonVirtualThunkPrefixDemang = "non-virtual thunk to ";
+    const std::string VirtualThunkPrefixDemang = "virtual thunk to ";
+
     struct TypeInfo {
     };
+
 
     struct Vtable {
         int64_t offset = -1;
@@ -31,45 +43,6 @@ namespace RecordAnalysis {
     };
 
     using RecordMap = std::unordered_map<std::string, std::shared_ptr<RecordInformation>>;
-
-    void printRecordAnalyzerResults(raw_ostream &OutS, const RecordMap &recordMap);
-
-    const std::string StructPrefix = "struct.";
-    const std::string ClassPrefix = "class.";
-    const std::string VTablePrefix = "_ZTV";
-    const std::string VTablePrefixDemang = "vtable for ";
-    const std::string TypeInfoPrefix = "_ZTI";
-    const std::string TypeInfoPrefixDemang = "typeinfo for ";
-    const std::string TypeInfoNamePrefixDemang = "typeinfo name for ";
-    const std::string NonVirtualThunkPrefix = "_ZThn";
-    const std::string NonVirtualThunkPrefixDemang = "non-virtual thunk to ";
-    const std::string VirtualThunkPrefixDemang = "virtual thunk to ";
-
-    bool isTypeInfo(const std::string &VarName);
-
-    bool isVTable(const std::string &VarName);
-
-    bool isThunk(const std::string &VarName);
-
-    std::string removeTypeInfoPrefix(std::string VarName);
-
-    std::string removeVTablePrefix(std::string VarName);
-
-    std::string removeStructPrefix(std::string VarName);
-
-    std::string removeClassPrefix(std::string VarName);
-
-    std::string removeThunkPrefix(std::string VarName);
-
-    std::string guessNameFromThunk(std::string VarName);
-
-    Function *getThunkFunction(Function *vtableFunction);
-
-    Vtable toVtable(const GlobalVariable &Global);
-
-    StructType *getFunctionOriginStruct(Function &f);
-
-    void linkTypeHierarchyMap(RecordMap &map, Module &M);
 
     RecordMap work(Module &M);
 
@@ -89,35 +62,29 @@ namespace RecordAnalysis {
     };
 
 //------------------------------------------------------------------------------
-// Legacy PM interface
-//------------------------------------------------------------------------------
-    struct LegacyRecordAnalyzer : public llvm::ModulePass {
-
-
-        LegacyRecordAnalyzer() : llvm::ModulePass(ID) {}
-
-        bool runOnModule(llvm::Module &M) {
-            recordMap = work(M);
-            return false;
-        }
-
-        // The print method must be implemented by Legacy analysis passes in order to
-        // print a human readable version of the analysis results:
-        void print(raw_ostream &OutS, Module const *) const {
-            printRecordAnalyzerResults(OutS, recordMap);
-        }
-
-        static char ID;
-        RecordMap recordMap;
-    };
-
-
-//------------------------------------------------------------------------------
 // New PM interface for the printer pass
 //------------------------------------------------------------------------------
     class RecordAnalyzerPrinter : public llvm::PassInfoMixin<RecordAnalyzerPrinter> {
     public:
         explicit RecordAnalyzerPrinter(llvm::raw_ostream &OutS) : OS(OutS) {}
+
+        void printRecordAnalyzerResults(raw_ostream &OutS, const RecordMap &recordMap) {
+            //todo: implement this
+            outs() << "There are: " << recordMap.size() << " vtables\n";
+            for (const auto &elem: recordMap) {
+                outs() << "VTable for: " << elem.first << " contains:\n";
+                for (auto elem2: elem.second->vtable.functions) {
+                    outs() << demangle(elem2->getName().str()) << "\n";
+                }
+                outs() << "A Pointer of this type could call methods from:\n";
+                for (auto elem2: elem.second->callSet) {
+                    outs() << elem2->name << "\n";
+                }
+            }
+            outs() << "--------------------------------\n";
+
+            //outs()<<"Printing the type recordMap analysis result is not yet implmeneted\n";
+        }
 
         PreservedAnalyses run(Module &M, ModuleAnalysisManager &MAM) {
             auto recordMap = MAM.getResult<RecordAnalyzer>(M);
