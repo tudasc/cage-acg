@@ -1,5 +1,4 @@
 #include <Transform/CallgraphGenerator.h>
-#include "MetaCGMetadata/VTableMetadata.h"
 #include "io/VersionThreeMCGWriter.h"
 #include <fstream>
 
@@ -20,9 +19,7 @@ namespace CallgraphGeneration {
                 continue;
             }
             if (!llvmNode.first->hasName()) {
-#ifndef NDEBUG
                 outs() << "Found function without name!\n";
-#endif
                 continue;
             }
 
@@ -33,9 +30,7 @@ namespace CallgraphGeneration {
 
             for (auto calleeFunctionCandidate: *llvmNode.second) {
                 if (!calleeFunctionCandidate.first.has_value()) {
-#ifndef NDEBUG
                     outs() << "Function:" << callerFunction.getName() << " calls external node\n";
-#endif
                     continue;
                 }
 
