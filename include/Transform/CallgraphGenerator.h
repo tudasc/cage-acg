@@ -14,7 +14,6 @@
 
 #include "Callgraph.h"
 #include "MCGManager.h"
-#include "Analysis/RecordAnalyzer.h"
 #include "io/MCGWriter.h"
 
 

@@ -6,9 +6,6 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Passes/PassBuilder.h"
 
-#include "Analysis/RecordAnalyzer.h"
-#include "Analysis/DVA.h"
-
 #include "Transform/CallgraphGenerator.h"
 
 llvm::PassPluginLibraryInfo getPluginInfo() {

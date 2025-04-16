@@ -1,3 +1,0 @@
-lib.bc
--r=lib.bc,myFunction,px
--r=lib.bc,a,px

@@ -1,11 +1,5 @@
-add_library(cage MODULE Plugin.cpp)
+add_library(cage SHARED Plugin.cpp)
 
-target_link_libraries(cage metacg::metacg)
-
-target_compile_options(cage PUBLIC "-fno-rtti")
-get_target_property(pluginName cage NAME)
-set_target_properties(cage PROPERTIES PROBABLE_PATH ${CMAKE_CURRENT_BINARY_DIR}/lib${pluginName}.so)
-
-add_subdirectory(Analysis)
-add_subdirectory(Runtime)
+target_link_libraries(cage PRIVATE metavirt_Types)
+target_link_libraries(cage PRIVATE metacg::metacg)
 add_subdirectory(Transform)
