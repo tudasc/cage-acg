@@ -19,6 +19,7 @@ namespace CallgraphGeneration {
             llvm::DebugInfoFinder dbg_finder{};
             dbg_finder.processModule(m);
             metaDataAvail = dbg_finder.subprogram_count() != 0;
+
             for (const auto &i: dbg_finder.subprograms()) {
                 if (auto f = m.getFunction(i->getName())) {
                     //We found the function with its normal name (C-Style function)
@@ -30,25 +31,38 @@ namespace CallgraphGeneration {
                     assert(false);
                 }
             }
-        }
 
-        void visitCallBase(llvm::CallBase &I) {
-            if (I.getCalledFunction() != nullptr && I.getCalledFunction()->isIntrinsic()) return;
-            if (!metaDataAvail) return;
-            auto vcallData = metavirt::vcall_data_for(&I);
-            if (!vcallData.has_value()) return;
-            if (vcallData.value().call_targets.empty()) return;
-
-            auto *currentFunction = I.getParent()->getParent();
-            auto *currentNode = mcg->getNode(currentFunction->getName().str());
-            for (const auto &dataPoints: metavirt::fn_names_and_origins(vcallData.value())) {
-                auto *childNode = mcg->getOrInsertNode(dataPoints.name.str(), dataPoints.origin.str());
-                mcg->addEdge(currentNode, childNode);
-                assert(childNode->getOrigin() == dataPoints.origin);
+            for(const auto& func : m.getFunctionList()){
+                SignatureFunctionMap[func.getFunctionType()].push_back(&func.getFunction());
             }
 
         }
 
+
+        void visitCallBase(llvm::CallBase &I) {
+            if (I.getCalledFunction() != nullptr && I.getCalledFunction()->isIntrinsic()) return;
+            auto *currentFunction = I.getParent()->getParent();
+            auto *currentNode = mcg->getNode(currentFunction->getName().str());
+            if (metaDataAvail){
+                size_t numAddedCalls=addVirtualCalltargets(I, currentNode);
+                //This function pointer was a virtual call base, so we do not need to run the overapproximation
+                if(numAddedCalls!=0) return;
+            }
+
+            if(I.getCalledFunction() == nullptr){
+                //Was function pointer, where we can not get the called function
+                const auto& possibleFuncs=SignatureFunctionMap[I.getFunctionType()];
+                for(const auto& func : possibleFuncs){
+                    metacg::CgNode *childNode;
+                    if(metaDataAvail){
+                        childNode=mcg->getOrInsertNode(FunctionInfoMap[func]->getLinkageName().str(), FunctionInfoMap[func]->getFilename().str());
+                    }else{
+                        childNode=mcg->getOrInsertNode(func->getName().str());
+                    }
+                    mcg->addEdge(currentNode, childNode);
+                }
+            }
+        }
 
         void visitFunction(llvm::Function &F) {
             if (F.isIntrinsic()) return;
@@ -79,11 +93,26 @@ namespace CallgraphGeneration {
             }
         }
 
+    private:
+        size_t addVirtualCalltargets(CallBase &I, const metacg::CgNode *currentNode) const {
+            auto vcallData = metavirt::vcall_data_for(&I);
+            if (!vcallData.has_value()) return 0;
+            if (vcallData.value().call_targets.empty()) return 0;
+
+            outs() << metavirt::fn_names_and_origins(vcallData.value()).size()<<"\n";
+            for (const auto &dataPoints: metavirt::fn_names_and_origins(vcallData.value())) {
+                auto *childNode = mcg->getOrInsertNode(dataPoints.name.str(), dataPoints.origin.str());
+                mcg->addEdge(currentNode, childNode);
+                assert(childNode->getOrigin() == dataPoints.origin);
+            }
+            return metavirt::fn_names_and_origins(vcallData.value()).size();
+        }
+
         metacg::Callgraph *mcg = metacg::graph::MCGManager::get().getOrCreateCallgraph("LTOGraph", true);
         llvm::CallGraph *lcg;
         bool metaDataAvail = false;
         std::unordered_map<const Function *, const llvm::DISubprogram *> FunctionInfoMap;
-
+        std::unordered_map<llvm::FunctionType*, std::vector<const Function*>> SignatureFunctionMap;
     };
 
     bool work(Module &M, ModuleAnalysisManager *MA) {
