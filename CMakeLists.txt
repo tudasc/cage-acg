@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.17)
 project(CaGe)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 include(FetchContent)
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM/Clang version " ${LLVM_VERSION})
