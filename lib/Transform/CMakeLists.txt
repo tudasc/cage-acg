@@ -1,2 +1,1 @@
-target_sources(cage PUBLIC CallGraphGenerator.cpp)
-
+target_sources(cage PRIVATE generator.cxx)

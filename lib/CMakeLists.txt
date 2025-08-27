@@ -1,4 +1,4 @@
-add_library(cage SHARED Plugin.cpp)
+add_library(cage SHARED plugin.cxx)
 
 target_link_libraries(cage PRIVATE metavirt_Types)
 target_link_libraries(cage PRIVATE metacg::metacg)
