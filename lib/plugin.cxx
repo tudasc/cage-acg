@@ -13,7 +13,7 @@ plugin_info ()
     [] (llvm::PassBuilder& b)
     {
       // Allow registration via optlevel (non-lto)
-      b.registerOptimizerLastEPCallback ([] (llvm::ModulePassManager& pm, llvm::OptimizationLevel)
+      b.registerOptimizerLastEPCallback ([] (llvm::PassManager<llvm::Module>& pm, llvm::OptimizationLevel, llvm::ThinOrFullLTOPhase)
         {
           llvm::outs () << "Registering CaGe to run during opt\n";
           pm.addPass (cage::cage {});

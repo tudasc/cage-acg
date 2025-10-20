@@ -5,7 +5,7 @@
 #include <llvm/IR/Module.h>
 
 #include <Callgraph.h>
-#include <VirtCall.h>
+#include <metavirt/VirtCall.h>
 
 #include <unordered_map>
 
@@ -39,7 +39,7 @@ namespace cage
       // If we're looking at a direct call, just return the function directly, supported here for convenience
       if (auto const f = call.getCalledFunction (); f)
       {
-        metacg::CgNode* child = mcg->getOrInsertNode (f->getName ().str ());
+        metacg::CgNode* child = &mcg->getOrInsertNode (f->getName ().str ());
         child->setHasBody (f->getInstructionCount() != 0);
         r.push_back (child);
         return r;
@@ -49,7 +49,7 @@ namespace cage
       if (auto const vcall = metavirt::vcall_data_for (&call); vcall && !vcall->call_targets.empty ())
       {
         for (auto const& [name, origin]: fn_names_and_origins (*vcall))
-          r.push_back (mcg->getOrInsertNode (name.str (), origin.str ()));
+          r.push_back (&mcg->getOrInsertNode (name.str (), origin.str ()));
 
         return r;
       }
@@ -59,9 +59,9 @@ namespace cage
       {
         metacg::CgNode* child;
         if (has_md && is_contained (fn_map, f))
-          child = mcg->getOrInsertNode (fn_map.at (f)->getLinkageName ().str (), fn_map.at (f)->getFilename ().str ());
+          child = &mcg->getOrInsertNode (fn_map.at (f)->getLinkageName ().str (), fn_map.at (f)->getFilename ().str ());
         else
-          child = mcg->getOrInsertNode (f->getName ().str ());
+          child = &mcg->getOrInsertNode (f->getName ().str ());
 
         child->setHasBody (f->getInstructionCount() != 0);
         r.push_back (child);

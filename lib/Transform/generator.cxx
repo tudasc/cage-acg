@@ -3,7 +3,7 @@
 #include <llvm/Analysis/CallGraph.h>
 #include <llvm/IR/InstVisitor.h>
 
-#include <io/VersionThreeMCGWriter.h>
+#include <io/VersionFourMCGWriter.h>
 #include <MCGManager.h>
 
 #include <cxxabi.h>
@@ -44,13 +44,13 @@ namespace cage
       if (call.getCalledFunction () && call.getCalledFunction ()->isIntrinsic ())
         return;
 
-      auto const* current = mcg->getNode (call.getParent ()->getParent ()->getName ().str ());
+      auto const* current = mcg->getFirstNode (call.getParent ()->getParent ()->getName ().str ());
 
       if (!call.getCalledFunction ())
       {
         // If we're looking at an indirect call, add edges to all potential call targets we can resolve
         for (auto const possible = resolv.potential_targets (call); auto const* target: possible)
-          mcg->addEdge (current, target);
+          mcg->addEdge (*current, *target);
       }
       else if (call.getCalledFunction ()->getName () == "__kmpc_fork_call" && omp_handler.enabled ())
         omp_handler.add (call);
@@ -76,9 +76,9 @@ namespace cage
       if (resolv.map ().contains (&f))
       {
         auto const& origin = resolv.map ().at (&f)->getFilename ().str ();
-        current = mcg->getOrInsertNode (name.str (), origin);
+        current = &mcg->getOrInsertNode (name.str (), origin);
       } else
-        current = mcg->getOrInsertNode (name.str ());
+        current = &mcg->getOrInsertNode (name.str ());
 
       current->setHasBody (f.getInstructionCount() != 0);
 
@@ -105,14 +105,14 @@ namespace cage
         if (resolv.map ().contains (child_f))
         {
           auto const& origin = resolv.map ().at (child_f)->getFilename ().str ();
-          child = mcg->getOrInsertNode (child_f->getName ().str (), origin);
+          child = &mcg->getOrInsertNode (child_f->getName ().str (), origin);
         } else
-          child = mcg->getOrInsertNode (child_f->getName ().str ());
+          child = &mcg->getOrInsertNode (child_f->getName ().str ());
 
         child->setHasBody (f.getInstructionCount() != 0);
 
-        if (!mcg->existEdgeFromTo (current->getId (), child->getId ()))
-          mcg->addEdge (current, child);
+        if (!mcg->existsEdge (current->getId (), child->getId ()))
+          mcg->addEdge (*current, *child);
       }
     }
 
@@ -131,7 +131,7 @@ namespace cage
       );
       auto const args = make_filter_range (published, [] (auto const& it) { return it.has_value (); });
 
-      auto* md = new mcg::md_arg_flow {};
+      auto md = std::make_unique<mcg::md_arg_flow> ();
       for (auto const& arg: args)
       {
         auto const outs = collect<std::vector<mcg::md_arg_output>> (map_range (arg->uses, [] (use_in_call const& use)
@@ -150,9 +150,7 @@ namespace cage
       }
 
       if (!md->args.empty ())
-        node->addMetaData (md);
-      else
-        delete md;
+        node->addMetaData (std::move (md));
     }
 
     void
@@ -202,7 +200,7 @@ namespace cage
             llvm::outs () << "-> local [" << (*intrin)->getVariable ()->getName () << "] is published.\n";
         }
   
-      auto* md = new mcg::md_locals {};
+      auto md = std::make_unique<mcg::md_locals> ();
       for (auto const& local: locals)
         for (auto const& use: local->uses)
         {
@@ -211,9 +209,7 @@ namespace cage
         }
 
       if (!md->locals.empty ())
-        node->addMetaData (md);
-      else
-        delete md;
+        node->addMetaData (std::move (md));
     }
 
     metacg::Callgraph* mcg;
@@ -232,7 +228,7 @@ namespace cage
 
     // Serialize the generated callgraph to disk
     metacg::io::JsonSink sink {};
-    metacg::io::VersionThreeMCGWriter writer { { { 3, 0 }, { "GenCC", 0, 1, "NO_GIT_SHA_AVAILABLE" } }, false, true };
+    metacg::io::VersionFourMCGWriter writer { { { 4, 0 }, { "GenCC", 0, 1, "NO_GIT_SHA_AVAILABLE" } }, false, true };
     writer.write (metacg::graph::MCGManager::get ().getCallgraph (), sink);
 
     char const* name = std::getenv ("GENCC_CG_NAME");

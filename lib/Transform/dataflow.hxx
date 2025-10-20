@@ -3,8 +3,6 @@
 
 #include <llvm/IR/InstIterator.h>
 
-#include <deque>
-
 #include "resolver.hxx"
 #include "difinder.hxx"
 #include "metacg.hxx"

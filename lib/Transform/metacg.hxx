@@ -1,7 +1,7 @@
 #ifndef CAGE_METACG_HXX
 #define CAGE_METACG_HXX
 
-#include <metadata/Metadata.h>
+#include <metadata/MetaData.h>
 #include <nlohmann/json.hpp>
 
 namespace cage::mcg
@@ -105,10 +105,13 @@ namespace cage::mcg
     md_arg_flow (md_arg_flow const&) = default;
 
     explicit
-    md_arg_flow (nlohmann::json const& j) { j.at ("args").get_to (args); }
+    md_arg_flow (nlohmann::json const& j, metacg::StrToNodeMapping&)
+    {
+      j.at ("args").get_to (args);
+    }
 
     [[nodiscard]] nlohmann::json
-    to_json () const override
+    toJson (metacg::NodeToStrMapping&) const override
     {
       return {
         { "args", args }
@@ -118,12 +121,18 @@ namespace cage::mcg
     [[nodiscard]] char const*
     getKey () const override { return key; }
 
-    [[nodiscard]] MetaData*
-    clone() const override { return new md_arg_flow { *this }; }
+    [[nodiscard]] std::unique_ptr<metacg::MetaData>
+    clone() const override { return std::make_unique<md_arg_flow> (*this); }
 
     void
-    merge (MetaData const&) override
-    {
+    applyMapping (metacg::GraphMapping const&) override {}
+
+    void
+    merge (
+      MetaData const&,
+      std::optional<metacg::MergeAction>,
+      metacg::GraphMapping const&
+    ) override {
       // TODO(e820, mcg): Support merging
     }
 
@@ -141,10 +150,13 @@ namespace cage::mcg
     md_locals (md_locals const&) = default;
 
     explicit
-    md_locals (nlohmann::json const& j) { j.at ("locals").get_to (locals); }
+    md_locals (nlohmann::json const& j, metacg::StrToNodeMapping&)
+    {
+      j.at ("locals").get_to (locals);
+    }
 
     [[nodiscard]] nlohmann::json
-    to_json () const override
+    toJson (metacg::NodeToStrMapping&) const final
     {
       return {
           { "locals", locals }
@@ -154,12 +166,18 @@ namespace cage::mcg
     [[nodiscard]] char const*
     getKey () const override { return key; }
 
-    [[nodiscard]] MetaData*
-    clone() const override { return new md_locals { *this }; }
+    [[nodiscard]] std::unique_ptr<MetaData>
+    clone() const override { return std::make_unique<md_locals> (*this); }
 
     void
-    merge (MetaData const&) override
-    {
+    applyMapping (metacg::GraphMapping const&) override {}
+
+    void
+    merge (
+      MetaData const&,
+      std::optional<metacg::MergeAction>,
+      metacg::GraphMapping const&
+    ) override {
       // TODO(e820, mcg): Support merging
     }
 

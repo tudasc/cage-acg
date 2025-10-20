@@ -46,7 +46,7 @@ namespace cage
     void
     add (llvm::CallBase const& call) const
     {
-      auto const* parent = mcg->getOrInsertNode (call.getParent ()->getParent ()->getName ().str ());
+      auto const* parent = &mcg->getOrInsertNode (call.getParent ()->getParent ()->getName ().str ());
       auto const* kmpc_fork = call.getCalledFunction ();
 
       metacg::CgNode const* child{};
@@ -55,15 +55,15 @@ namespace cage
 
       if (mode == omp_mode::split)
       {
-        child = mcg->getOrInsertNode (kmpc_fork->getName ().str ());
-        mcg->addEdge (parent, child);
+        child = &mcg->getOrInsertNode (kmpc_fork->getName ().str ());
+        mcg->addEdge (*parent, *child);
         parent = child;
       }
 
       if (auto const* region = dyn_cast<llvm::Function> (call.getArgOperand (2)); region)
-        child = mcg->getOrInsertNode (region->getName ().str ());
+        child = &mcg->getOrInsertNode (region->getName ().str ());
 
-      mcg->addEdge (parent, child);
+      mcg->addEdge (*parent, *child);
     }
 
     [[nodiscard]] auto
@@ -91,8 +91,8 @@ namespace cage
         auto const* child = elem->getFunction ();
         assert (child->hasName ());
 
-        auto const* node = mcg->getOrInsertNode (child->getName ().str ());
-        mcg->addEdge (parent, node);
+        auto const* node = &mcg->getOrInsertNode (child->getName ().str ());
+        mcg->addEdge (*parent, *node);
       }
     }
 
