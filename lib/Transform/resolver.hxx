@@ -32,8 +32,10 @@ namespace cage
     }
 
     llvm::SmallVector<metacg::CgNode*, 4>
-    potential_targets (llvm::CallBase const& call) const
+    potential_targets (llvm::CallBase const& call, llvm::StringRef const caller) const
     {
+      llvm::outs () << "[DBG] potential_targets: caller = " << caller << '\n';
+
       llvm::SmallVector<metacg::CgNode*, 4> r {};
 
       // If we're looking at a direct call, just return the function directly, supported here for convenience
@@ -57,12 +59,12 @@ namespace cage
       // Resolve all other function pointers via function type approximation
       for (auto const& possible = sig_map.at (call.getFunctionType ()); auto const& f: possible)
       {
-        metacg::CgNode* child;
-        if (has_md && is_contained (fn_map, f))
-          child = &mcg->getOrInsertNode (fn_map.at (f)->getLinkageName ().str (), fn_map.at (f)->getFilename ().str ());
-        else
-          child = &mcg->getOrInsertNode (f->getName ().str ());
+        if (f->getName () == caller)
+          continue;
 
+        llvm::outs () << "[DBG] -> potential callee: " << f->getName () << '\n';
+
+        metacg::CgNode* child = &mcg->getOrInsertNode (f->getName ().str ());
         child->setHasBody (f->getInstructionCount() != 0);
         r.push_back (child);
       }

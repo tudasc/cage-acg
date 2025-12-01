@@ -49,8 +49,12 @@ namespace cage
       if (!call.getCalledFunction ())
       {
         // If we're looking at an indirect call, add edges to all potential call targets we can resolve
-        for (auto const possible = resolv.potential_targets (call); auto const* target: possible)
+        for (auto const possible = resolv.potential_targets (call, call.getFunction ()->getName ());
+             auto const* target: possible)
+        {
+          llvm::outs () << "[DBG] -> target = " << target->getFunctionName () << '\n';
           mcg->addEdge (*current, *target);
+        }
       }
       else if (call.getCalledFunction ()->getName () == "__kmpc_fork_call" && omp_handler.enabled ())
         omp_handler.add (call);

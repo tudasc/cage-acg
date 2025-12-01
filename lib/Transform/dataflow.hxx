@@ -73,7 +73,7 @@ namespace cage
 
           llvm::outs () << "--> input index is [" << var->idx << "].\n";
 
-          auto const callees = resolver.potential_targets (call);
+          auto const callees = resolver.potential_targets (call, call.getFunction ()->getName ());
           for (auto const& callee: callees)
             llvm::outs () << "--> callee: " << callee->getFunctionName () << "\n";
 
