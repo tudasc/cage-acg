@@ -24,7 +24,6 @@ FetchContent_Declare(
         llvm-metavirt
         GIT_REPOSITORY ${GIT_REPO}
         GIT_TAG 38cd08cf7ed26be026cb4ed42b4963f33467b765
-        GIT_SHALLOW 1
 )
 FetchContent_MakeAvailable(llvm-metavirt)
 
@@ -32,7 +31,6 @@ FetchContent_Declare(
         metacg
         GIT_REPOSITORY https://github.com/tudasc/MetaCG.git
         GIT_TAG a8118c718d3ba67c4f6110095046f56b8cea31f3
-        GIT_SHALLOW 1
         OVERRIDE_FIND_PACKAGE
 )
 FetchContent_MakeAvailable(metacg)
