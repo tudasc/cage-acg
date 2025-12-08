@@ -28,13 +28,13 @@ namespace cage
 
   template <typename R>
   auto
-  published_values (R&& inputs, resolver const& resolver)
+  published_values (R&& inputs, resolver const& resolver, bool is_local_flow)
   {
     llvm::outs () << "> Published value called\n";
     for (auto const& it: inputs)
       llvm::outs () << "-> element: [" << *std::get<0> (it) << "]\n";
 
-    return map_range (inputs, [&resolver] (std::pair<llvm::Value const*, size_t> input)
+    return map_range (inputs, [&resolver, is_local_flow] (std::pair<llvm::Value const*, size_t> input)
     {
       llvm::outs () << "-> input is [" << *std::get<0> (input) << "].\n";
 
@@ -67,6 +67,9 @@ namespace cage
         {
           auto const& call = *cast<llvm::CallBase> (inst);
           auto const* loc = di::location (inst);
+
+          if (is_local_flow && call.getCalledFunction ())
+            continue;
 
           if (!var.has_value ())
             var.emplace (std::get<1> (input), std::get<0> (input));

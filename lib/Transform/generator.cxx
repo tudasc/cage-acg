@@ -131,7 +131,8 @@ namespace cage
         {
           return std::make_pair (&arg, &arg - f.arg_begin ());
         }),
-        resolv
+        resolv,
+        false
       );
       auto const args = make_filter_range (published, [] (auto const& it) { return it.has_value (); });
 
@@ -191,7 +192,8 @@ namespace cage
           // Map this to a dummy pair to keep the `published_values` interface consistent
           [] (auto const& inst) { return std::make_pair (&inst, 0); }
         ),
-        resolv
+        resolv,
+        true
       );
 
       // Collect local variables that escape the current function

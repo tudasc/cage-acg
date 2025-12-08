@@ -57,17 +57,22 @@ namespace cage
       }
 
       // Resolve all other function pointers via function type approximation
-      for (auto const& possible = sig_map.at (call.getFunctionType ()); auto const& f: possible)
+      try
       {
-        if (f->getName () == caller)
-          continue;
+        for (auto const& possible = sig_map.at (call.getFunctionType ()); auto const& f: possible)
+        {
+          if (f->getName () == caller)
+            continue;
 
-        llvm::outs () << "[DBG] -> potential callee: " << f->getName () << '\n';
+          llvm::outs () << "[DBG] -> potential callee: " << f->getName () << '\n';
 
-        metacg::CgNode* child = &mcg->getOrInsertNode (f->getName ().str ());
-        child->setHasBody (f->getInstructionCount() != 0);
-        r.push_back (child);
+          metacg::CgNode* child = &mcg->getOrInsertNode (f->getName ().str ());
+          child->setHasBody (f->getInstructionCount() != 0);
+          r.push_back (child);
+        }
       }
+      catch (std::out_of_range const&)
+      {}
 
       return r;
     }
