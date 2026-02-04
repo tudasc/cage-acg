@@ -72,14 +72,14 @@ function(set_cage_mpi_compiler)
       if(MPI_C_FOUND)
         set(CAGE_MPICC
             "env ${env_c}=${CAGE_CLANG_EXEC} ${MPI_C_COMPILER}"
-            CACHE STRING "TypeART MPICC compiler command for scripts"
+            CACHE STRING "CaGe MPICC compiler command for scripts"
           )
         mark_as_advanced(CAGE_MPICC)
       endif()
       if(MPI_CXX_FOUND)
         set(CAGE_MPICXX
             "env ${env_cxx}=${CAGE_CLANGCXX_EXEC} ${MPI_CXX_COMPILER}"
-            CACHE STRING "TypeART MPICXX compiler command for scripts"
+            CACHE STRING "CaGe MPICXX compiler command for scripts"
         )
         mark_as_advanced(CAGE_MPICXX)
       endif()
