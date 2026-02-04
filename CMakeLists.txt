@@ -1,6 +1,18 @@
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.21)
 project(CaGe)
+
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+list(APPEND CMAKE_MODULE_PATH 
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake
+)
+
+include(cageToolchainOptions)
+
 include(FetchContent)
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM/Clang version " ${LLVM_VERSION})
@@ -35,5 +47,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(metacg)
 
+cage_add_format_target(format-cage-sources
+  "Formats project source files"
+  TARGETS lib/*.cxx
+          include/*.hxx
+)
+
 include_directories(include)
 add_subdirectory(lib)
+if(PROJECT_IS_TOP_LEVEL)
+  add_subdirectory(test)
+endif()
