@@ -3,10 +3,18 @@ cage_add_format_target(format-cage-tests
   TARGETS *.c *.cpp *.h
 )
 
-# Find FileCheck
-cage_find_llvm_progs(CAGE_FILECHECK_EXEC "FileCheck-${LLVM_VERSION_MAJOR};FileCheck")
+macro(pythonize_bool truth_var var)
+  if(${truth_var})
+    set(${var} True)
+  else()
+    set(${var} False)
+  endif()
+endmacro()
 
-# Find lit
+find_package(OpenMP QUIET)
+pythonize_bool(OPENMP_FOUND CAGE_OPENMP_FOUND)
+
+cage_find_llvm_progs(CAGE_FILECHECK_EXEC "FileCheck-${LLVM_VERSION_MAJOR};FileCheck")
 if(LLVM_EXTERNAL_LIT)
   cmake_path(GET LLVM_EXTERNAL_LIT PARENT_PATH LLVM_EXTERNAL_LIT_DIR)
 endif()

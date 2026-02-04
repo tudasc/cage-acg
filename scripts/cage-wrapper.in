@@ -42,6 +42,28 @@ function cage_is_linking_fn() {
   return 1 # Linking
 }
 
+function cage_parse_cmd_line_fn() {
+  local cage_has_debug=0
+  local cage_has_flto=0
+  for arg in "$@"; do
+    if [ "$arg" = "-g" ]; then
+      cage_has_debug=1
+      break
+    fi
+    if [ "$arg" = "-flto" ]; then
+      cage_has_flto=1
+      break
+    fi
+  done
+  if [ $cage_has_debug == 0 ]; then
+    cage_more_flags+=" -g"
+  fi
+  if [ $cage_has_flto == 0 ]; then
+    cage_more_flags+=" -flto"
+  fi
+}
+
+
 function cage_main_driver_fn() {
   cage_global_init_fn
 
@@ -51,7 +73,8 @@ function cage_main_driver_fn() {
     return $?
   fi
   
-  local cage_flags="-flto"
+  cage_parse_cmd_line_fn "$@"
+  local cage_flags="${cage_more_flags}"
   
   cage_is_linking_fn "$@"
   if [ "$?" == 1 ]; then

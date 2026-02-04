@@ -1,8 +1,7 @@
-// XFAIL: *
 // RUN: env GENCC_CG_NAME=%t.mcg %cage_cxx %s -o %t && %filecheck %s --input-file=%t.mcg
 // CHECK: "nodes":
 
-#include <stdio.h>
+#include <cstdio>
 
 struct Base {
   virtual int bar() {

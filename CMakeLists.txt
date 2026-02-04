@@ -36,7 +36,7 @@ add_compile_definitions(VIRTCALL_LOG_LEVEL)
 FetchContent_Declare(
         llvm-metavirt
         GIT_REPOSITORY ${GIT_REPO}
-        GIT_TAG 38cd08cf7ed26be026cb4ed42b4963f33467b765
+        GIT_TAG 29272e6d537175eb23687f232fdae95b05e42a88
 )
 FetchContent_MakeAvailable(llvm-metavirt)
 

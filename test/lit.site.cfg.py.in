@@ -7,5 +7,6 @@ config.cage_scripts_dir = "@PROJECT_BINARY_DIR@/scripts"
 config.filecheck_path = "@CAGE_FILECHECK_EXEC@"
 config.test_exec_root = "@CMAKE_CURRENT_BINARY_DIR@"
 config.lit_path = "@CAGE_LIT_EXEC@"
+config.has_openmp = @CAGE_OPENMP_FOUND@
 
 lit_config.load_config(config, "@CMAKE_CURRENT_SOURCE_DIR@/lit.cfg.py")
