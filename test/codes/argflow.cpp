@@ -1,10 +1,13 @@
+// RUN: env GENCC_CG_NAME=%t.mcg %cage_cxx %s -o %t && %filecheck %s --input-file=%t.mcg
+// CHECK: "nodes":
+
 int __attribute__((used)) bar(int a, int b, const char** p) {
   return 0;
 }
 
-int foo(int a, int b, const char** p);
+int foo(int a, int b, const char** p) { return 0; }
 
-extern int (*p)(int a, int b, const char** p);
+int (*p)(int a, int b, const char** p) = bar;
 
 int main(int argc, const char* argv[argc]) {
   int a;
