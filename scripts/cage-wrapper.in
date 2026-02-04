@@ -1,0 +1,64 @@
+#!/bin/bash
+#
+# CaGe compiler wrapper
+#
+
+function cage_is_wrapper_disabled_fn() {
+  case "${CAGE_WRAPPER}" in
+  off | OFF | 0 | false | FALSE)
+    return 1
+    ;;
+  esac
+  return 0
+}
+
+function cage_global_init_fn() {
+  local -r cage_use_rel_path=@CAGE_RELOCATABLE@
+  if [ "$cage_use_rel_path" == 0 ]; then
+    local -r cage_bin_dir="@CAGE_BINARY_DIR@"
+    local -r cage_lib_dir="@CAGE_LIB_DIR@"
+    local -r cage_include_dir="@CAGE_INCLUDE_DIRS@"
+  else
+    # shellcheck disable=SC2155
+    local -r cage_bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # shellcheck disable=SC2155
+    local -r cage_install_dir="$(dirname "${cage_bin_dir}")"
+    local -r cage_lib_dir="${cage_install_dir}/@CMAKE_INSTALL_LIBDIR@"
+  fi
+  local -r cage_pass="${cage_lib_dir}/$<TARGET_FILE_NAME:cage::cage>"
+
+  readonly cage_compiler="@CAGE_COMPILER@"
+  readonly cage_pass_path="${cage_pass}"
+}
+
+function cage_is_linking_fn() {
+  for arg in "$@"; do
+    case "$arg" in
+    -c | -S | -E | -emit-llvm)
+      return 0 # Not linking
+    ;;
+    esac
+  done
+  return 1 # Linking
+}
+
+function cage_main_driver_fn() {
+  cage_global_init_fn
+
+  cage_is_wrapper_disabled_fn
+  if [ "$?" == 1 ]; then
+    $cage_compiler "$@"
+    return $?
+  fi
+  
+  local cage_flags="-flto"
+  
+  cage_is_linking_fn "$@"
+  if [ "$?" == 1 ]; then
+    cage_flags+=" -fuse-ld=lld -Wl,--load-pass-plugin=${cage_pass_path} -Wl,--lto-newpm-passes=CaGe"
+  fi
+  
+  $cage_compiler ${cage_flags} "$@"
+}
+
+cage_main_driver_fn "$@"

@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 project(CaGe)
+include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -55,6 +56,7 @@ cage_add_format_target(format-cage-sources
 
 include_directories(include)
 add_subdirectory(lib)
+add_subdirectory(scripts)
 if(PROJECT_IS_TOP_LEVEL)
   add_subdirectory(test)
 endif()
