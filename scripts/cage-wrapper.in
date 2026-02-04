@@ -3,8 +3,21 @@
 # CaGe compiler wrapper
 #
 
+# We need a global array to hold arguments after modification because
+# bash functions cannot modify the parent's positional parameters ($@) directly.
+CAGE_ARGS=()
+
 function cage_is_wrapper_disabled_fn() {
   case "${CAGE_WRAPPER}" in
+  off | OFF | 0 | false | FALSE)
+    return 1
+    ;;
+  esac
+  return 0
+}
+
+function cage_ignore_opt_fn() {
+  case "${CAGE_IGNORE_OPT}" in
   off | OFF | 0 | false | FALSE)
     return 1
     ;;
@@ -42,16 +55,41 @@ function cage_is_linking_fn() {
   return 1 # Linking
 }
 
+function cage_adjust_cmd_line_fn() {
+  CAGE_ARGS=()
+  cage_ignore_opt_fn
+  local should_strip_opts=$?
+  if [ "$should_strip_opts" == 1 ]; then
+    CAGE_ARGS=("${@}")
+    return
+  fi
+  for arg in "$@"; do
+    case "$arg" in
+      -O|-O[0-3]|-Os|-Oz|-Og|-Ofast)
+        continue
+        ;;
+      -march=*|-mtune=*|-mcpu=*)
+        continue
+        ;;
+      *)
+        CAGE_ARGS+=("$arg")
+        ;;
+    esac
+  done
+}
+
 function cage_parse_cmd_line_fn() {
   local cage_has_debug=0
   local cage_has_flto=0
+
   for arg in "$@"; do
     if [ "$arg" = "-g" ]; then
       cage_has_debug=1
-      break
     fi
     if [ "$arg" = "-flto" ]; then
       cage_has_flto=1
+    fi
+    if [[ $cage_has_debug == 1 && $cage_has_flto == 1 ]]; then
       break
     fi
   done
@@ -63,7 +101,6 @@ function cage_parse_cmd_line_fn() {
   fi
 }
 
-
 function cage_main_driver_fn() {
   cage_global_init_fn
 
@@ -73,15 +110,17 @@ function cage_main_driver_fn() {
     return $?
   fi
   
-  cage_parse_cmd_line_fn "$@"
+  cage_adjust_cmd_line_fn "$@"
+  cage_parse_cmd_line_fn "${CAGE_ARGS[@]}"
+  
   local cage_flags="${cage_more_flags}"
   
-  cage_is_linking_fn "$@"
+  cage_is_linking_fn "${CAGE_ARGS[@]}"
   if [ "$?" == 1 ]; then
     cage_flags+=" -fuse-ld=lld -Wl,--load-pass-plugin=${cage_pass_path} -Wl,--lto-newpm-passes=CaGe"
   fi
   
-  $cage_compiler ${cage_flags} "$@"
+  $cage_compiler ${cage_flags} "${CAGE_ARGS[@]}"
 }
 
 cage_main_driver_fn "$@"
