@@ -5,6 +5,11 @@ target_link_libraries(cage PRIVATE metacg::metacg)
 
 add_library(cage::cage ALIAS cage)
 
+# RPATH settings
+# Ensure that the install RPATH is set to $ORIGIN (on Linux)
+set_target_properties(cage PROPERTIES INSTALL_RPATH "$ORIGIN")
+
+
 install(
   TARGETS cage
   EXPORT CaGeTargets
