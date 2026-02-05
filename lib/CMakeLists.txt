@@ -9,6 +9,7 @@ add_library(cage::cage ALIAS cage)
 # Ensure that the install RPATH is set to $ORIGIN (on Linux)
 set_target_properties(cage PROPERTIES INSTALL_RPATH "$ORIGIN")
 
+target_compile_definitions(cage PRIVATE CAGE_LOG_LEVEL=${CAGE_LOG_LEVEL})
 
 install(
   TARGETS cage

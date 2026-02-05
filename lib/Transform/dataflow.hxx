@@ -3,6 +3,7 @@
 
 #include <llvm/IR/InstIterator.h>
 
+#include <cage/Logger.h>
 #include "resolver.hxx"
 #include "difinder.hxx"
 #include "metacg.hxx"
@@ -30,13 +31,13 @@ namespace cage
   auto
   published_values (R&& inputs, resolver const& resolver, bool is_local_flow)
   {
-    llvm::outs () << "> Published value called\n";
+    LOG_DEBUG("> Published value called");
     for (auto const& it: inputs)
-      llvm::outs () << "-> element: [" << *std::get<0> (it) << "]\n";
+      LOG_DEBUG("-> element: [" << *std::get<0> (it) << "]");
 
     return map_range (inputs, [&resolver, is_local_flow] (std::pair<llvm::Value const*, size_t> input)
     {
-      llvm::outs () << "-> input is [" << *std::get<0> (input) << "].\n";
+      LOG_DEBUG("-> input is [" << *std::get<0> (input) << "].");
 
       llvm::SmallVector<workq_item, 64> workq { workq_item { .last = nullptr, .current = std::get<0> (input) } };
       llvm::SmallPtrSet<llvm::Value const*, 32> seen {};
@@ -47,7 +48,7 @@ namespace cage
       {
         if (auto const [_, inserted] = seen.insert (val); inserted)
         {
-          llvm::outs () << "!--> enqueueing [" << *val << "]...\n";
+          LOG_DEBUG("!--> enqueueing [" << *val << "]...");
           workq.emplace_back (last, val);
         }
       };
@@ -57,8 +58,8 @@ namespace cage
         auto const [last, current] = workq.pop_back_val ();
 
         if (last)
-          llvm::outs () << "--> last is [" << *last << "].\n";
-        llvm::outs () << "--> current is [" << *current << "].\n";
+          LOG_DEBUG("--> last is [" << *last << "].");
+        LOG_DEBUG("--> current is [" << *current << "].");
 
         // If we reach a call, try to resolve the call to the set of potential callees and move on to the next
         // item in the work queue.
@@ -74,11 +75,11 @@ namespace cage
           if (!var.has_value ())
             var.emplace (std::get<1> (input), std::get<0> (input));
 
-          llvm::outs () << "--> input index is [" << var->idx << "].\n";
+          LOG_DEBUG("--> input index is [" << var->idx << "].");
 
           auto const callees = resolver.potential_targets (call, call.getFunction ()->getName ());
           for (auto const& callee: callees)
-            llvm::outs () << "--> callee: " << callee->getFunctionName () << "\n";
+            LOG_DEBUG("--> callee: " << callee->getFunctionName ());
 
           var->uses.push_back (use_in_call {
             .callees = callees,
@@ -91,7 +92,7 @@ namespace cage
 
         if (current->users ().empty ())
         {
-          llvm::outs () << "--> users empty, skipping.\n";
+          LOG_DEBUG("--> users empty, skipping.");
           continue;
         }
 
@@ -105,13 +106,13 @@ namespace cage
               if (auto const* alloc = dyn_cast<llvm::Instruction> (getPointerOperand (inst));
                   alloc && alloc->getOpcode () == llvm::Instruction::Alloca)
               {
-                llvm::outs () << "--> reached store [" << *inst << "].\n";
+                LOG_DEBUG("--> reached store [" << *inst << "].");
                 enqueue (current, alloc);
               }
               break;
 
             default:
-              llvm::outs () << "--> found user [" << *inst << "].\n";
+              LOG_DEBUG("--> found user [" << *inst << "].");
               enqueue (current, inst);
             }
           }

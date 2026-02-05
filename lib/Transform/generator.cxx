@@ -3,6 +3,7 @@
 #include "resolver.hxx"
 
 #include <MCGManager.h>
+#include <cage/Logger.h>
 #include <cage/generator.hxx>
 #include <cxxabi.h>
 #include <fstream>
@@ -40,7 +41,7 @@ struct call_base_visitor : llvm::InstVisitor<call_base_visitor> {
       // If we're looking at an indirect call, add edges to all potential call targets we can resolve
       for (auto const possible = resolv.potential_targets(call, call.getFunction()->getName());
            auto const* target : possible) {
-        llvm::outs() << "[DBG] -> target = " << target->getFunctionName() << '\n';
+        LOG_DEBUG("[DBG] -> target = " << target->getFunctionName());
         mcg->addEdge(*current, *target);
       }
     } else if (call.getCalledFunction()->getName() == "__kmpc_fork_call" && omp_handler.enabled())
@@ -52,7 +53,7 @@ struct call_base_visitor : llvm::InstVisitor<call_base_visitor> {
       return;
 
     auto const name = f.getName();
-    llvm::outs() << "Visiting function: " << name << '\n';
+    LOG_DEBUG("Visiting function: " << name);
 
     // Skip certain OpenMP related functions depending on the selected OpenMP mode
     if (name == "__kmpc_fork_call" && omp_handler.has_not_enabled_mode(omp_mode::split))
@@ -104,7 +105,7 @@ struct call_base_visitor : llvm::InstVisitor<call_base_visitor> {
 
  private:
   void handle_args(llvm::Function const& f, metacg::CgNode* node) const {
-    llvm::outs() << "> processing arguments...\n";
+    LOG_DEBUG("> processing arguments...");
 
     auto const published = published_values(
         map_range(f.args(), [&f](auto const& arg) { return std::make_pair(&arg, &arg - f.arg_begin()); }), resolv,
@@ -135,7 +136,7 @@ struct call_base_visitor : llvm::InstVisitor<call_base_visitor> {
   }
 
   void handle_locals(llvm::Function const& f, metacg::CgNode* node) const {
-    llvm::outs() << "> processing locals...\n";
+    LOG_DEBUG("> processing locals...");
 
     auto const insts     = instructions(f);
     auto const published = published_values(
@@ -171,7 +172,7 @@ struct call_base_visitor : llvm::InstVisitor<call_base_visitor> {
     for (auto const& local : locals)
       if (auto const intrin = di::find_intrinsic(dyn_cast<llvm::Instruction>(local->val)); intrin) {
         if ((*intrin)->getVariable())
-          llvm::outs() << "-> local [" << (*intrin)->getVariable()->getName() << "] is published.\n";
+          LOG_DEBUG("-> local [" << (*intrin)->getVariable()->getName() << "] is published.");
       }
 
     auto md = std::make_unique<mcg::md_locals>();

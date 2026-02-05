@@ -30,9 +30,8 @@ else()
     set(GIT_REPO https://github.com/ahueck/llvm-metavirt.git)
 endif()
 
-message(STATUS "Loglevel ${VIRTCALL_LOG_LEVEL}")
-add_compile_definitions(VIRTCALL_LOG_LEVEL)
 
+set(METAVIRT_LOG_LEVEL 0)
 FetchContent_Declare(
         llvm-metavirt
         GIT_REPOSITORY ${GIT_REPO}
