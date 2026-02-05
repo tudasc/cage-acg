@@ -40,7 +40,7 @@ FetchContent_MakeAvailable(llvm-metavirt)
 FetchContent_Declare(
         metacg
         GIT_REPOSITORY https://github.com/tudasc/MetaCG.git
-        GIT_TAG a8118c718d3ba67c4f6110095046f56b8cea31f3
+        GIT_TAG 5729bc23000e0e6ef71e85481fdb71294f970129 # Pre cage integration
         OVERRIDE_FIND_PACKAGE
 )
 FetchContent_MakeAvailable(metacg)
