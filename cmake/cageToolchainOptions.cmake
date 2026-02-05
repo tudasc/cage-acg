@@ -2,6 +2,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 include(llvm-util)
 include(clang-format)
+include(cage-target-util)
 
 if(PROJECT_IS_TOP_LEVEL)
   if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)

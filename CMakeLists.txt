@@ -30,12 +30,10 @@ else()
     set(GIT_REPO https://github.com/ahueck/llvm-metavirt.git)
 endif()
 
-
-set(METAVIRT_LOG_LEVEL 0)
 FetchContent_Declare(
         llvm-metavirt
         GIT_REPOSITORY ${GIT_REPO}
-        GIT_TAG 29272e6d537175eb23687f232fdae95b05e42a88
+        GIT_TAG 24dd8bd4dde714229112badfa900a7348547a869
 )
 FetchContent_MakeAvailable(llvm-metavirt)
 
