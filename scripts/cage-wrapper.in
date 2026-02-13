@@ -117,7 +117,9 @@ function cage_main_driver_fn() {
   
   cage_is_linking_fn "${CAGE_ARGS[@]}"
   if [ "$?" == 1 ]; then
-    cage_flags+=" -fuse-ld=lld -Wl,--load-pass-plugin=${cage_pass_path} -Wl,--lto-newpm-passes=CaGe"
+    cage_flags+=" -fuse-ld=lld -Wl,--load-pass-plugin=${cage_pass_path} -Wl,--lto-newpm-passes=CaGe -Wl,-mllvm,-compute-dead=false -Wl,--discard-none -Wl,--lto-O0 -femit-all-decls -fno-virtual-function-elimination -Wl,--no-gc-sections"
+    # Required to avoid missing nodes in cg: -Wl,-mllvm,-compute-dead=false 
+    # or, also: -Wl,--discard-none -Wl,--lto-O0 -femit-all-decls -fno-virtual-function-elimination -Wl,--no-gc-sections
   fi
   
   $cage_compiler ${cage_flags} "${CAGE_ARGS[@]}"
