@@ -2,6 +2,7 @@
 #define CAGE_RESOLVER_HXX
 
 #include <Callgraph.h>
+#include <cage/Logger.h>
 #include <llvm/IR/DebugInfo.h>
 #include <llvm/IR/Module.h>
 #include <metavirt/VirtCall.h>
@@ -53,7 +54,7 @@ struct resolver {
         if (f->getName() == caller)
           continue;
 
-        LOG_DEBUG("[DBG] -> potential callee: " << f->getName())
+        LOG_DEBUG("[DBG] -> potential callee: " << f->getName());
 
         metacg::CgNode* child = &mcg->getOrInsertNode(f->getName().str());
         child->setHasBody(f->getInstructionCount() != 0);

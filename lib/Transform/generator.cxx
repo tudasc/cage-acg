@@ -167,12 +167,15 @@ struct call_base_visitor : llvm::InstVisitor<call_base_visitor> {
         resolv, true);
 
     // Collect local variables that escape the current function
-    auto const locals = make_filter_range(published, [](auto const& it) { return it.has_value(); });
-
+    auto const locals = llvm::make_filter_range(published, [](auto const& it) { return it.has_value(); });
+    LOG_DEBUG("-> No intrinsic metadata for local " << published.empty())
     for (auto const& local : locals)
       if (auto const intrin = di::find_intrinsic(dyn_cast<llvm::Instruction>(local->val)); intrin) {
-        if ((*intrin)->getVariable())
+        if ((*intrin)->getVariable()) {
           LOG_DEBUG("-> local [" << (*intrin)->getVariable()->getName() << "] is published.");
+        } else {
+        }
+        LOG_DEBUG("-> No intrinsic metadata for local " << *local->val)
       }
 
     auto md = std::make_unique<mcg::md_locals>();

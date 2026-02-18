@@ -14,8 +14,8 @@
 #define CAGE_LOG_LEVEL 2
 #endif
 
-#ifndef LOG_BASENAME_FILE
-#define LOG_BASENAME_FILE __FILE__
+#ifndef CAGE_LOG_BASENAME
+#define CAGE_LOG_BASENAME __FILE__
 #endif
 
 namespace cage::detail {
@@ -32,7 +32,7 @@ inline void log(std::string_view msg) {
     std::lock_guard<std::mutex> lock{::cage::detail::print_mutex};                                                \
     std::string logging_message;                                                                                  \
     llvm::raw_string_ostream rso(logging_message);                                                                \
-    rso << (LEVEL) << LOG_BASENAME_FILE << ":" << __func__ << ":" << __LINE__ << ":" << MSG << "\n"; /* NOLINT */ \
+    rso << (LEVEL) << CAGE_LOG_BASENAME << ":" << __func__ << ":" << __LINE__ << ":" << MSG << "\n"; /* NOLINT */ \
     ::cage::detail::log(rso.str());                                                                               \
   }
 
