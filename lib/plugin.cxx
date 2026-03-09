@@ -5,13 +5,20 @@
 
 llvm::PassPluginLibraryInfo plugin_info() {
   return {LLVM_PLUGIN_API_VERSION, "CaGe", "0.3", [](llvm::PassBuilder& b) {
-            // Allow registration via optlevel (non-lto)
+// Allow registration via optlevel (non-lto)
+#if LLVM_VERSION_MAJOR > 19
             b.registerOptimizerLastEPCallback(
                 [](llvm::PassManager<llvm::Module>& pm, llvm::OptimizationLevel, llvm::ThinOrFullLTOPhase) {
                   LOG_DEBUG("Registering CaGe to run during opt");
                   pm.addPass(cage::cage{});
                 });
-
+#else
+                        b.registerOptimizerLastEPCallback(
+                [](llvm::PassManager<llvm::Module>& pm, llvm::OptimizationLevel) {
+                  LOG_DEBUG("Registering CaGe to run during opt");
+                  pm.addPass(cage::cage{});
+                });
+#endif
             // Registering via optlevel during lto appears to still be broken
             b.registerFullLinkTimeOptimizationLastEPCallback([](llvm::ModulePassManager& pm, llvm::OptimizationLevel) {
               LOG_DEBUG("Registering CaGe to run in during full-lto");
