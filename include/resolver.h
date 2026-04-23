@@ -1,16 +1,16 @@
 #ifndef CAGE_RESOLVER_HXX
 #define CAGE_RESOLVER_HXX
 
-#include <Callgraph.h>
-#include <cage/Logger.h>
 #include <llvm/IR/DebugInfo.h>
 #include <llvm/IR/Module.h>
+#include <metacg/Callgraph.h>
 #include <metavirt/VirtCall.h>
+#include <metavirt/support/Logger.h>
 #include <unordered_map>
 
-namespace cage {
+namespace ACGPlugin {
 struct resolver {
-  explicit resolver(llvm::Module const& m, metacg::Callgraph* mcg) : mcg{mcg} {
+  explicit resolver(llvm::Module const& m, metacg::Callgraph& mcg) : mcg{mcg} {
     llvm::DebugInfoFinder dbg_finder{};
     dbg_finder.processModule(m);
 
@@ -34,7 +34,7 @@ struct resolver {
 
     // If we're looking at a direct call, just return the function directly, supported here for convenience
     if (auto const f = call.getCalledFunction(); f) {
-      metacg::CgNode* child = &mcg->getOrInsertNode(f->getName().str());
+      metacg::CgNode* child = &mcg.getOrInsertNode(f->getName().str());
       child->setHasBody(f->getInstructionCount() != 0);
       r.push_back(child);
       return r;
@@ -43,7 +43,7 @@ struct resolver {
     // Attempt to resolve the call base as a virtual call
     if (auto const vcall = metavirt::vcall_data_for(&call); vcall && !vcall->call_targets.empty()) {
       for (auto const& [name, origin] : fn_names_and_origins(*vcall))
-        r.push_back(&mcg->getOrInsertNode(name.str(), origin.str()));
+        r.push_back(&mcg.getOrInsertNode(name.str(), origin.str()));
 
       return r;
     }
@@ -56,7 +56,7 @@ struct resolver {
 
         LOG_DEBUG("[DBG] -> potential callee: " << f->getName());
 
-        metacg::CgNode* child = &mcg->getOrInsertNode(f->getName().str());
+        metacg::CgNode* child = &mcg.getOrInsertNode(f->getName().str());
         child->setHasBody(f->getInstructionCount() != 0);
         r.push_back(child);
       }
@@ -72,10 +72,10 @@ struct resolver {
 
  private:
   bool has_md;
-  metacg::Callgraph* mcg{};
+  metacg::Callgraph& mcg;
   std::unordered_map<llvm::Function const*, llvm::DISubprogram const*> fn_map{};
   std::unordered_map<llvm::FunctionType*, std::vector<llvm::Function const*>> sig_map{};
 };
-}  // namespace cage
+}  // namespace ACGPlugin
 
-#endif  // CAGE_RESOLVER_HXX
+#endif // CAGE_RESOLVER_HXX

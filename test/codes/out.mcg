@@ -1,0 +1,122 @@
+{
+    "_CG": {
+        "meta": {},
+        "nodes": {
+            "_Z3bariiPPKc": {
+                "callees": {},
+                "functionName": "_Z3bariiPPKc",
+                "hasBody": true,
+                "meta": {},
+                "origin": null
+            },
+            "_Z3fooiiPPKc": {
+                "callees": {},
+                "functionName": "_Z3fooiiPPKc",
+                "hasBody": true,
+                "meta": {},
+                "origin": null
+            },
+            "main": {
+                "callees": {
+                    "_Z3fooiiPPKc": {}
+                },
+                "functionName": "main",
+                "hasBody": true,
+                "meta": {
+                    "argflow": {
+                        "args": [
+                            {
+                                "idx": 0,
+                                "outs": [
+                                    {
+                                        "by_ref": false,
+                                        "callees": [
+                                            1
+                                        ],
+                                        "idx": 0,
+                                        "loc": {
+                                            "col": 0,
+                                            "line": 0
+                                        }
+                                    },
+                                    {
+                                        "by_ref": false,
+                                        "callees": [
+                                            0,
+                                            1
+                                        ],
+                                        "idx": 0,
+                                        "loc": {
+                                            "col": 0,
+                                            "line": 0
+                                        }
+                                    },
+                                    {
+                                        "by_ref": false,
+                                        "callees": [
+                                            1
+                                        ],
+                                        "idx": 1,
+                                        "loc": {
+                                            "col": 0,
+                                            "line": 0
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "idx": 1,
+                                "outs": [
+                                    {
+                                        "by_ref": true,
+                                        "callees": [
+                                            1
+                                        ],
+                                        "idx": 2,
+                                        "loc": {
+                                            "col": 0,
+                                            "line": 0
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "localflow": {
+                        "locals": [
+                            {
+                                "callees": [
+                                    0,
+                                    1
+                                ],
+                                "loc": {
+                                    "col": 0,
+                                    "line": 0
+                                }
+                            },
+                            {
+                                "callees": [
+                                    0,
+                                    1
+                                ],
+                                "loc": {
+                                    "col": 0,
+                                    "line": 0
+                                }
+                            }
+                        ]
+                    }
+                },
+                "origin": null
+            }
+        }
+    },
+    "_MetaCG": {
+        "generator": {
+            "name": "CaGe",
+            "sha": "caddb7c95bd6203bfecf43adc0edd8efd39af54a",
+            "version": "0.1"
+        },
+        "version": "4.0"
+    }
+}

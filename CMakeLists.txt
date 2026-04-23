@@ -1,59 +1,42 @@
-cmake_minimum_required(VERSION 3.21)
-project(CaGe)
-include(GNUInstallDirs)
-
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-list(APPEND CMAKE_MODULE_PATH 
-  ${CMAKE_CURRENT_SOURCE_DIR}/cmake
-)
-
-include(cageToolchainOptions)
+cmake_minimum_required(VERSION 3.16)
+project(ACGPlugin DESCRIPTION "An plugin for MetaCG's CaGe tool, to track argument flow across a callgraph'")
 
 include(FetchContent)
-find_package(LLVM REQUIRED CONFIG)
-message(STATUS "Found LLVM/Clang version " ${LLVM_VERSION})
 
-if("${LLVM_VERSION_MAJOR}" VERSION_LESS 18)
-    message(STATUS "Found LLVM ${LLVM_VERSION_MAJOR}, but need LLVM 18 or above")
-endif()
+set(CMAKE_CXX_STANDARD 23)
 
-include_directories(${LLVM_INCLUDE_DIRS})
-
-if(DEFINED USERNAME_PW)
-    set(GIT_REPO https://${USERNAME_PW}@github.com/ahueck/llvm-metavirt.git)
-else()
-    set(GIT_REPO https://github.com/ahueck/llvm-metavirt.git)
-endif()
-
-FetchContent_Declare(
-        llvm-metavirt
-        GIT_REPOSITORY ${GIT_REPO}
-        GIT_TAG 24dd8bd4dde714229112badfa900a7348547a869
-)
-FetchContent_MakeAvailable(llvm-metavirt)
-
+#Build metacgs graph tools, as we are a plugin to the CaGe tool
+set(METACG_BUILD_GRAPH_TOOLS ON)
 FetchContent_Declare(
         metacg
         GIT_REPOSITORY https://github.com/tudasc/MetaCG.git
-        GIT_TAG 5729bc23000e0e6ef71e85481fdb71294f970129 # Pre cage integration
-        OVERRIDE_FIND_PACKAGE
+        GIT_TAG        b64a4ef9aa9e623bcb40998e81f57613c6ff5ff3
+        GIT_SHALLOW    1
 )
 FetchContent_MakeAvailable(metacg)
 
-cage_add_format_target(format-cage-sources
-  "Formats project source files"
-  TARGETS lib/*.cxx
-          include/*.hxx
+find_package(
+        LLVM
+        REQUIRED
+        CONFIG
 )
 
-include_directories(include)
-add_subdirectory(lib)
-add_subdirectory(scripts)
-if(PROJECT_IS_TOP_LEVEL)
-  add_subdirectory(test)
-endif()
+set(METAVIRT_LOG_LEVEL
+        "0"
+        CACHE STRING "MetaVirt log level from 0 (least verbose) to 4 (most verbose)"
+)
+FetchContent_Declare(
+        metavirt
+        GIT_REPOSITORY https://github.com/ahueck/llvm-metavirt.git
+        GIT_TAG devel
+        GIT_SHALLOW 1
+        FIND_PACKAGE_ARGS
+)
+FetchContent_MakeAvailable(metavirt)
+
+add_library(acg-plugin SHARED src/ACGPlugin.cpp)
+
+target_include_directories(acg-plugin PRIVATE include ${LLVM_INCLUDE_DIRS})
+target_include_directories(acg-plugin PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
+target_link_libraries(acg-plugin PRIVATE cage-plugin-interface)
+target_link_libraries(acg-plugin PRIVATE metavirt::Types)
